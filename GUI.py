@@ -1,25 +1,19 @@
 
-"""
-GUI整体设计思路
-1.创建一个GUI,用户使用时需要提供的交互式操作为：
-    1. 根据主函数中游戏人数的循环计算出是否轮到当前玩家做猜测，并提供给定的交互式窗口，该窗口要做的是显示提示语和将用户的输入(包括基本输入和斋飞)读入到主程序，并提供一个是否喊一的二选一按钮
-    2. 是否跳开（如果跳开，立即调用函数计算当前规则下的结果），并将主程序的当前玩家更新
-
-2. mytask:创建窗口并布局    
-"""
-
-
 import sys
-from PyQt5.QtWidgets import (QMainWindow,QLabel, QTextEdit,QInputDialog,QPushButton, QAction, QApplication,QLineEdit,QWidget)
+from PyQt5.QtWidgets import (QLabel, QTextEdit,QDialog,QPushButton, QAction, QApplication,QLineEdit,QWidget)
+from PyQt5.QtWidgets import (QHBoxLayout,QVBoxLayout,QInputDialog)
 from PyQt5.QtGui import QIcon
 
 
 
-class MainWindow(QMainWindow):
+class MainWindow(QWidget):
 
     def __init__(self):
         super().__init__()
-        
+        self.user_input=None # 储存用户的输入
+        self.is_open=False # 判断是否开
+        self.is_jump_open=False # 判断是否跳开
+        self.is_plus_one=False # 判断是否加一
         self.initWindow()
         
         
@@ -27,32 +21,27 @@ class MainWindow(QMainWindow):
 
     def initWindow(self):               
 
-        # create a tool to exit
-        exitAct = QAction(QIcon('./images/exit.png'), 'Exit', self)
-        exitAct.setShortcut('Ctrl+Q')
-        exitAct.setStatusTip('Exit application')
-        exitAct.triggered.connect(self.close)
 
-        self.statusBar()
+        # 创建两个按钮供用户选择
+        openButton = QPushButton("开")
+        continueButton = QPushButton("继续猜测")
+        jumpButton = QPushButton("跳开")
 
-        # creare menuBar
-        menubar = self.menuBar()
-        fileMenu = menubar.addMenu('&File')
-        fileMenu.addAction(exitAct)
 
-        toolbar = self.addToolBar('Exit')
-        toolbar.addAction(exitAct)
-
-        # create the dialog button to guide input
-
-        inputbtn=QPushButton('开始游戏',self)
-        inputbtn.setToolTip('点击即可开始游戏')
-        inputbtn.resize(inputbtn.sizeHint())
-        inputbtn.move(100, 100) 
         
-        # button connect to create dialog
-        inputbtn.clicked.connect(self.create_dialog)
+        hbox = QHBoxLayout()
+        hbox.addWidget(openButton)
+        hbox.addWidget(continueButton)
+        hbox.addWidget(jumpButton)
+
+        vbox = QVBoxLayout()
+        vbox.addLayout(hbox)
+        self.setLayout(vbox) 
         
+        # button connect to create dialog or open
+        continueButton.clicked.connect(self.create_dialog)
+        openButton.clicked.connect(self.open_action)
+        jumpButton.clicked.connect(self.jump_open_action)
 
         # set the window's style
         self.setGeometry(300, 300, 350, 250)
@@ -61,55 +50,72 @@ class MainWindow(QMainWindow):
         self.show()
     
     def create_dialog(self):
-        self.dialog=Dialog()
-        
-        
-        
-        
-        
+        dialog = Dialog()
+        result = dialog.exec_()  # 显示对话窗口并等待用户交互
+
+        if result == QDialog.Accepted:
+            # 用户点击了对话窗口的“确定”按钮
+            self.user_input = dialog.get_user_input()
+            print(f'用户输入的文本是: {self.user_input}')
+        # print(self.user_input)
+    
+    def open_action(self):
+        self.is_open=True
+        # print(self.is_open)
+    
+    def jump_open_action(self):
+        self.is_jump_open=True
+        print(self.is_jump_open)
 
 
-
-
-
-class Dialog(QWidget):
-
+class Dialog(QDialog):
     def __init__(self):
         super().__init__()
-        self.user_input = None  # 初始化一个属性来保存用户输入
-        self.stored_text = None  # 初始化一个属性来保存打印的文本
-        self.initDialog()
-        
-        
 
+        self.initDialog()
+        self.user_input = None  # 初始化一个属性来保存用户输入
 
     def initDialog(self):
+        self.setWindowTitle('继续猜测')
+        self.setGeometry(200, 200, 300, 200)
 
-        self.btn = QPushButton('输入猜测', self)
-        self.btn.move(20, 20)
-        self.btn.clicked.connect(self.showDialog)
+        layout = QVBoxLayout()
 
-
-        self.le = QLineEdit(self)
-        self.le.move(130, 22)
-
-        self.setGeometry(300, 300, 290, 150)
-        self.setWindowTitle('输入猜测')
-        self.show()
+        # 对话引导提示符
+        self.label = QLabel('输入你的猜测，以空格分隔(例如:7 4 1),最后一个数字1代表飞猜测，2代表斋猜测:', self)
+        layout.addWidget(self.label)
 
 
-    def showDialog(self):
+        # 文本编辑创立
+        self.text_input = QLineEdit(self)
+        layout.addWidget(self.text_input)
 
-        text, ok = QInputDialog.getText(self, '输入猜测', 
-            '输入你的猜测，以空格分隔(例如:7 4 1),最后一个数字1代表飞猜测，2代表斋猜测:')
-        if ok:
-            self.le.setText(str(text))
-            print(f'用户输入的文本是: {text}')
-            
+        # 添加“确定”按钮
+        ok_button = QPushButton('确定', self)
+        ok_button.clicked.connect(self.accept)
+        layout.addWidget(ok_button)
+        
+
+        self.setLayout(layout)
+
+    def get_user_input(self):
+        return self.text_input.text()
+    
+        
+    
+
+
+
+        
+
+        
+        
+        
+
 
     
-    
-    
+        
+
 
 
             
