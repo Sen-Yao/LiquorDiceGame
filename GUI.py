@@ -25,6 +25,7 @@ class MainWindow(QWidget):
         openButton = QPushButton("开")
         continueButton = QPushButton("继续猜测")
         jumpButton = QPushButton("跳开")
+        label = QLabel("欢迎使用LiquorDiceGame！")
 
 
         # 对主界面进行盒布局
@@ -34,8 +35,10 @@ class MainWindow(QWidget):
         hbox.addWidget(jumpButton)
 
         vbox = QVBoxLayout()
+        vbox.addWidget(label)
         vbox.addLayout(hbox)
         self.setLayout(vbox) 
+
         
         # 根据按钮的点击情况选择不同的函数处理
         continueButton.clicked.connect(self.create_dialog)
