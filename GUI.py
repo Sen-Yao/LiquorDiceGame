@@ -15,6 +15,8 @@ class MainWindow(QWidget):
         self.is_open=False # 判断是否开
         self.is_jump_open=False # 判断是否跳开
         self.is_plus_one=False # 判断是否加一
+        self.player_dice=[1,2,3,4,5] # 玩家骰子结果，测试用，实际从服务器读取
+        self.current_player=1 # 玩家游戏序号，测试用，实际从服务器读取
         self.initWindow()
 
     # 初始化主窗口           
@@ -25,7 +27,7 @@ class MainWindow(QWidget):
         openButton = QPushButton("开")
         continueButton = QPushButton("继续猜测")
         jumpButton = QPushButton("跳开")
-        label = QLabel("欢迎使用LiquorDiceGame！")
+        label = QLabel("欢迎使用LiquorDiceGame！\n您是" + str(self.current_player) +"号玩家" "\n您的骰子结果为" + ','.join(map(str, self.player_dice))+"\n请点击下方按钮做出您下一步的操作", self)
 
 
         # 对主界面进行盒布局
