@@ -1,10 +1,8 @@
-
 import sys
-from PyQt5.QtWidgets import (QLabel, QDialog,QPushButton,QApplication,QLineEdit,QWidget)
-from PyQt5.QtWidgets import (QHBoxLayout,QVBoxLayout,QCheckBox)
+from PyQt5.QtWidgets import (QLabel, QDialog, QPushButton, QApplication, QLineEdit, QWidget)
+from PyQt5.QtWidgets import (QHBoxLayout, QVBoxLayout, QCheckBox)
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
-
 
 
 class MainWindow(QWidget):
@@ -20,15 +18,14 @@ class MainWindow(QWidget):
         self.initWindow()
 
     # 初始化主窗口           
-    def initWindow(self):               
-
-
+    def initWindow(self):
         # 创建三个按钮供用户选择三种游戏策略
         openButton = QPushButton("开")
         continueButton = QPushButton("继续猜测")
         jumpButton = QPushButton("跳开")
-        label = QLabel("欢迎使用LiquorDiceGame！\n您是" + str(self.current_player) +"号玩家" "\n您的骰子结果为" + ','.join(map(str, self.player_dice))+"\n请点击下方按钮做出您下一步的操作", self)
-
+        label = QLabel(
+            "欢迎使用LiquorDiceGame！\n您是" + str(self.current_player) + "号玩家" "\n您的骰子结果为" + ','.join(
+                map(str, self.player_dice)) + "\n请点击下方按钮做出您下一步的操作", self)
 
         # 对主界面进行盒布局
         hbox = QHBoxLayout()
@@ -39,9 +36,8 @@ class MainWindow(QWidget):
         vbox = QVBoxLayout()
         vbox.addWidget(label)
         vbox.addLayout(hbox)
-        self.setLayout(vbox) 
+        self.setLayout(vbox)
 
-        
         # 根据按钮的点击情况选择不同的函数处理
         continueButton.clicked.connect(self.create_dialog)
         openButton.clicked.connect(self.open_action)
@@ -50,9 +46,9 @@ class MainWindow(QWidget):
         # 设置窗口风格 大小图标
         self.setGeometry(300, 300, 350, 250)
         self.setWindowTitle('LiquorDiceGame')
-        self.setWindowIcon(QIcon('./images/icon.png'))    
+        self.setWindowIcon(QIcon('./images/icon.png'))
         self.show()
-    
+
     # 该函数用于创建继续猜测的对话对象和读入用户输入
     def create_dialog(self):
         dialog = Dialog()
@@ -65,15 +61,15 @@ class MainWindow(QWidget):
             self.is_use_one=dialog.verify_use_one()
             print(f'用户是否喊一:{self.is_use_one}')
         # print(self.user_input)
-    
+
     # 该函数用于处理开
     def open_action(self):
-        self.is_open=True
+        self.is_open = True
         # print(self.is_open)
-    
+
     # 该函数用于处理跳开
     def jump_open_action(self):
-        self.is_jump_open=True
+        self.is_jump_open = True
         # print(self.is_jump_open)
 
 
@@ -110,7 +106,7 @@ class Dialog(QDialog):
         ok_button = QPushButton('确定', self)
         ok_button.clicked.connect(self.accept)
         layout.addWidget(ok_button)
-        
+
         self.setLayout(layout)
 
     # 返回用户输入
@@ -127,7 +123,6 @@ class Dialog(QDialog):
 
 
 if __name__ == '__main__':
-
     app = QApplication(sys.argv)
     ex = MainWindow()
     sys.exit(app.exec_())
