@@ -14,7 +14,7 @@ class MainWindow(QWidget):
         self.user_input=None # 储存用户的输入
         self.is_open=False # 判断是否开
         self.is_jump_open=False # 判断是否跳开
-        self.is_plus_one=False # 判断是否加一
+        self.is_use_one=False # 判断是否喊一
         self.player_dice=[1,2,3,4,5] # 玩家骰子结果，测试用，实际从服务器读取
         self.current_player=1 # 玩家游戏序号，测试用，实际从服务器读取
         self.initWindow()
@@ -62,8 +62,8 @@ class MainWindow(QWidget):
             # 用户点击了对话窗口的“确定”按钮
             self.user_input = dialog.get_user_input()
             print(f'用户输入的文本是: {self.user_input}')
-            self.is_plus_one=dialog.verify_plus_one()
-            print(f'用户是否加一:{self.is_plus_one}')
+            self.is_use_one=dialog.verify_use_one()
+            print(f'用户是否喊一:{self.is_use_one}')
         # print(self.user_input)
     
     # 该函数用于处理开
@@ -83,7 +83,7 @@ class Dialog(QDialog):
 
         self.initDialog()
         self.user_input = None  # 初始化一个属性来保存用户输入
-        self.is_plus_one = False # 初始化一个布尔型变量保存是否加一
+        self.is_use_one = False # 初始化一个布尔型变量保存是否加一
     
     # 初始化对话栏 
     def initDialog(self):
@@ -100,11 +100,11 @@ class Dialog(QDialog):
         self.text_input = QLineEdit(self)
         layout.addWidget(self.text_input)
 
-        # 加一checkbox创立
-        self.plus_one=QCheckBox('是否加一',self)
-        layout.addWidget(self.plus_one)
-        self.plus_one.toggle()
-        self.plus_one.stateChanged.connect(self.verify_plus_one)
+        # 喊一checkbox创立
+        self.use_one=QCheckBox('是否喊一',self)
+        layout.addWidget(self.use_one)
+        self.use_one.toggle()
+        self.use_one.stateChanged.connect(self.verify_use_one)
 
         # 添加“确定”按钮
         ok_button = QPushButton('确定', self)
@@ -118,12 +118,12 @@ class Dialog(QDialog):
         return self.text_input.text()
     
     #返回用户勾选
-    def verify_plus_one(self):
-        if self.plus_one.checkState() == Qt.Checked:
-            self.is_plus_one=True
+    def verify_use_one(self):
+        if self.use_one.checkState() == Qt.Checked:
+            self.is_use_one=True
         else:
-            self.is_plus_one=False
-        return self.is_plus_one
+            self.is_use_one=False
+        return self.is_use_one
 
 
 if __name__ == '__main__':
