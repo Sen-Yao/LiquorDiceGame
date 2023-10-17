@@ -26,6 +26,12 @@ class Env(object):
                 'rlcard/envs/blackjack.py'
                 TODO: Support more game configurations in the future.
         """
+        # name, game, default_game_config should be defined in the children class
+        self.name = None
+        self.game = None
+        self.default_game_config = None
+
+        self.agents = None
         self.allow_step_back = self.game.allow_step_back = config['allow_step_back']
         self.action_recorder = []
 
@@ -56,8 +62,8 @@ class Env(object):
         Returns:
             (tuple): Tuple containing:
 
-                (numpy.array): The begining state of the game
-                (int): The begining player
+                (numpy.array): The beginning state of the game
+                (int): The beginning player
         """
         state, player_id = self.game.init_game()
         self.action_recorder = []
@@ -119,7 +125,7 @@ class Env(object):
         self.agents = agents
 
     def run(self, is_training=False):
-        '''
+        """
         Run a complete game, either for evaluation or training RL agent.
 
         Args:
@@ -133,7 +139,7 @@ class Env(object):
 
         Note: The trajectories are 3-dimension list. The first dimension is for different players.
               The second dimension is for different transitions. The third dimension is for the contents of each transiton
-        '''
+        """
         trajectories = [[] for _ in range(self.num_players)]
         state, player_id = self.reset()
 
@@ -170,19 +176,19 @@ class Env(object):
         return trajectories, payoffs
 
     def is_over(self):
-        ''' Check whether the curent game is over
+        """ Check whether the current game is over
 
         Returns:
             (boolean): True if current game is over
-        '''
+        """
         return self.game.is_over()
 
     def get_player_id(self):
-        ''' Get the current player id
+        """ Get the current player id
 
         Returns:
             (int): The id of the current player
-        '''
+        """
         return self.game.get_player_id()
 
     def get_state(self, player_id):
@@ -197,30 +203,30 @@ class Env(object):
         return self._extract_state(self.game.get_state(player_id))
 
     def get_payoffs(self):
-        ''' Get the payoffs of players. Must be implemented in the child class.
+        """ Get the payoffs of players. Must be implemented in the child class.
 
         Returns:
             (list): A list of payoffs for each player.
 
         Note: Must be implemented in the child class.
-        '''
+        """
         raise NotImplementedError
 
     def get_perfect_information(self):
-        ''' Get the perfect information of the current state
+        """ Get the perfect information of the current state
 
         Returns:
             (dict): A dictionary of all the perfect information of the current state
-        '''
+        """
         raise NotImplementedError
 
     def get_action_feature(self, action):
-        ''' For some environments such as DouDizhu, we can have action features
+        """ For some environments such as DouDizhu, we can have action features
 
         Returns:
             (numpy.array): The action features
-        '''
-        # By default we use one-hot encoding
+        """
+        # By default, we use one-hot encoding
         feature = np.zeros(self.num_actions, dtype=np.int8)
         feature[action] = 1
         return feature
@@ -231,14 +237,14 @@ class Env(object):
         return seed
 
     def _extract_state(self, state):
-        ''' Extract useful information from state for RL. Must be implemented in the child class.
+        """ Extract useful information from state for RL. Must be implemented in the child class.
 
         Args:
             state (dict): The raw state
 
         Returns:
             (numpy.array): The extracted state
-        '''
+        """
         raise NotImplementedError
 
     def _decode_action(self, action_id):

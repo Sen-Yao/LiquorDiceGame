@@ -11,7 +11,7 @@ DEFAULT_GAME_CONFIG = {
 
 
 class LiquorDiceGameEnv(Env):
-    """ Blackjack Environment
+    """ LiquorDiceGame Environment
     """
 
     def __init__(self, config):
@@ -86,6 +86,9 @@ class LiquorDiceGameEnv(Env):
             action (str): action for the game
         """
         return self.actions[action_id]
+
+    def get_perfect_information(self):
+        pass
 
 
 rank2score = {"A": 11, "2": 2, "3": 3, "4": 4, "5": 5, "6": 6, "7": 7, "8": 8, "9": 9, "T": 10, "J": 10, "Q": 10,

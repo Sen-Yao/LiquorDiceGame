@@ -7,7 +7,10 @@ class LiquorDiceGame:
         self.game_pointer = None  # Which player is in action
         self.num_decks = None
         self.num_players = None
-        self.num_actions = 2
+
+        # num_actions means how many action can a player take
+        # A Guess
+        self.num_actions = None
         self.zhai_rule = zhai_rule
         self.jump_open_rule = jump_open_rule
 
@@ -18,11 +21,11 @@ class LiquorDiceGame:
         self.num_decks = game_config['game_num_decks']
 
     def get_num_players(self):
-        ''' Return the number of players in blackjack
+        """ Return the number of players in blackjack
 
         Returns:
             number_of_player (int): blackjack only have 1 player
-        '''
+        """
         return self.num_players
 
     def get_num_actions(self):
@@ -49,6 +52,16 @@ class LiquorDiceGame:
             player_id (int): current player's id
         """
 
+    def step(self, action):
+        """ Get the next state
+
+        Args:
+            action (str): a specific action of Liquor Dice Game. (Open or Guess)
+
+        Returns:/
+            dict: next player's state
+            int: next player's id
+        """
     def is_over(self):
         """ Check if the game is over
 
