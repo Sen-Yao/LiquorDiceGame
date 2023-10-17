@@ -66,6 +66,7 @@ class Env(object):
                 (int): The beginning player
         """
         state, player_id = self.game.init_game()
+
         self.action_recorder = []
         return self._extract_state(state), player_id
 

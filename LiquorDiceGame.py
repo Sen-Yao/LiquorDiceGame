@@ -21,8 +21,10 @@ class LiquorDiceGameEnv(Env):
         self.default_game_config = DEFAULT_GAME_CONFIG
         self.game = Game()
         super().__init__(config)
-        self.actions = ['open', 'stand']
-        self.state_shape = [[2] for _ in range(self.num_players)]
+        self.actions = [0, 0, False]
+
+        # The beginning statue of the game, each player have 5 dice and nothing to do
+        self.state_shape = [[5] for _ in range(self.num_players)]
         self.action_shape = [None for _ in range(self.num_players)]
 
     def _get_legal_actions(self):
