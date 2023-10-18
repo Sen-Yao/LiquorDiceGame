@@ -160,7 +160,7 @@ def train(lr, df, epoch):
                 # mark_state is made by previous player of the previous player, used to update Q of the previous player.
                 temp_state = player_list[i].Decide(state)
                 while not judge_legal_guess(state, temp_state):
-                    if player_list[i] is QlearningAIOneLevel:
+                    if isinstance(player_list[i],QlearningAIOneLevel) :
                         player_list[i].update_Q(state, temp_state, -10)
                     temp_state = player_list[i].Decide(state)
                 # state is an Open
