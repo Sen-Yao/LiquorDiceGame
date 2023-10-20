@@ -1,4 +1,5 @@
 import torch
+import torch.quantization as quantization
 import random
 from GameAI import AI
 
@@ -21,7 +22,8 @@ class QlearningAIOneLevel(AI):
         super().__init__(num_player, need_output)
         self.num_state = 12210 * self.num_player
         self.num_action = 55 * self.num_player + 1
-        self.Q_table = torch.zeros((5 * self.num_player + 2, 6, 2, 6, 6, 6, 6, 6, 5 * self.num_player + 1, 7, 2))
+        self.Q_table = torch.zeros((5 * self.num_player + 2, 6, 2, 6, 6, 6, 6, 6, 5 * self.num_player + 1, 7, 2),
+                                   dtype=torch.int8)
         self.trainable = True
         self.name = 'Q'
 
@@ -46,6 +48,7 @@ class QlearningAIOneLevel(AI):
         The AI will react depends on its dices result only
         :return: An action list
         """
+        self.guess = [0, 0, False]
         epsilon = random.random()
         # is greedy
         if epsilon < greedy_epsilon:
@@ -69,7 +72,8 @@ class QlearningAIOneLevel(AI):
                 self.dice[0] - 1][self.dice[1] - 1][self.dice[2] - 1][self.dice[3] - 1][self.dice[4] - 1]
             # Find the biggest Q in new_Q_table
             max_value = torch.max(new_Q_table)
-            max_index = torch.argmax(new_Q_table)
+            float_tensor = new_Q_table.dequantize()
+            max_index = torch.argmax(float_tensor)
             self.guess[2] = bool(max_index % 2)
             self.guess[1] = int(max_index % 14 // 2)
             self.guess[0] = int(max_index // 14)

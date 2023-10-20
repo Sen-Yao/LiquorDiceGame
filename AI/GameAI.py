@@ -156,6 +156,7 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
             print('已保存')
             torch.save(player_list[0].Q_table, 'tensor/tensor1.pt')
             torch.save(player_list[1].Q_table, 'tensor/tensor2.pt')
+            print('大小为', player_list[0].Q_table.storage().size())
         if need_output:
             print('\n\n\nepoch=', e)
         for player in player_list:
@@ -171,15 +172,11 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
                 # state is made by previous player
                 # temp_state is made by this player, but not confirm yet
                 # mark_state is made by previous player of the previous player, used to update Q of the previous player.
-                print('flag0:mark=', mark_state)
-                print('id:', id(mark_state), id(state), id(temp_state))
                 temp_state = player_list[i].Decide(state, ge)
-                print('id:', id(mark_state), id(state), id(temp_state))
-                print('flag1:mark=', mark_state)
                 # illegal guess
                 while not judge_legal_guess(state, temp_state, num_player):
                     if isinstance(player_list[i], targetAI):
-                        player_list[i].update_Q(state, temp_state, -10, lr, is_game)
+                        player_list[i].update_Q(state, temp_state, -100, lr, is_game)
                     temp_state = player_list[i].Decide(state, ge)
 
                 # state is an Open
@@ -192,13 +189,11 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
                     if mark_state[0] != -1:
                         if i == 0:
                             if isinstance(player_list[num_player - 1], targetAI):
-                                player_list[num_player - 1].update_Q(mark_state, state, 1, lr, is_game)
+                                player_list[num_player - 1].update_Q(mark_state, state, 10, lr, is_game)
                         else:
                             if isinstance(player_list[i - 1], targetAI):
-                                player_list[i - 1].update_Q(mark_state, state, 1, lr, is_game)
-                print('id:', id(mark_state), id(state), id(temp_state))
+                                player_list[i - 1].update_Q(mark_state, state, 10, lr, is_game)
                 mark_state = state
-                print('mark_state change to', mark_state)
                 state = temp_state
                 # print('state change to', temp_state)
 
@@ -215,21 +210,20 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
                     if isinstance(player_list[i], targetAI):
                         if need_output:
                             print(player_list[i].name, '在', state, '下选择', temp_state, '受到了奖励')
-                        player_list[i].update_Q(state, temp_state, 2, lr, is_game)
+                        player_list[i].update_Q(state, temp_state, 20, lr, is_game)
                         win += 1
 
                     # Punish last AI
-                    print('mark_state now', mark_state)
                     if i == 0:
                         if isinstance(player_list[num_player - 1], targetAI):
                             if need_output:
                                 print(player_list[num_player-1].name, '在', mark_state, '下选择', state, '受到了惩罚')
-                            player_list[num_player - 1].update_Q(mark_state, state, -5, lr, is_game)
+                            player_list[num_player - 1].update_Q(mark_state, state, -50, lr, is_game)
                     else:
                         if isinstance(player_list[i - 1], targetAI):
                             if need_output:
                                 print(player_list[i - 1].name, '在', mark_state, '下选择', state, '受到了惩罚')
-                            player_list[i - 1].update_Q(mark_state, state, -5, lr, is_game)
+                            player_list[i - 1].update_Q(mark_state, state, -50, lr, is_game)
 
                     break
                 # Open unsuccessful
@@ -246,14 +240,14 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
                     if state[0] < 1 and isinstance(player_list[i], targetAI):
                         if need_output:
                             print('开到初始值了！', state, temp_state)
-                        player_list[i].update_Q(state, temp_state, -10, lr, is_game)
+                        player_list[i].update_Q(state, temp_state, -100, lr, is_game)
                         break
                     # Normal error open
                     elif isinstance(player_list[i], targetAI):
                         # print('update Q =', player_list[i].update_Q)
                         if need_output:
                             print(player_list[i].name, '在', state, '下选择', temp_state, '受到了惩罚')
-                        player_list[i].update_Q(state, temp_state, -5, lr, is_game)
+                        player_list[i].update_Q(state, temp_state, -50, lr, is_game)
 
                         # Reward last AI
                         if i == 0:
@@ -261,13 +255,13 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
                                 if need_output:
                                     print(player_list[num_player - 1].name, '在', mark_state, '下选择', state,
                                           '受到了奖励')
-                                player_list[i].update_Q(mark_state, state, 2, lr, is_game)
+                                player_list[i].update_Q(mark_state, state, 20, lr, is_game)
                                 win += 1
                         else:
                             if isinstance(player_list[i - 1], targetAI):
                                 if need_output:
                                     print(player_list[i - 1].name, '在', mark_state, '下选择', state, '受到了奖励')
-                                player_list[i - 1].update_Q(mark_state, state, 2, lr, is_game)
+                                player_list[i - 1].update_Q(mark_state, state, 20, lr, is_game)
                                 win += 1
                         break
                     else:
