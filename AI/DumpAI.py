@@ -100,7 +100,7 @@ class DumpAI(AI):
                     return self.guess
                 # Try change
                 if self.dice_dict[real_most_frequent_value_face - 1] + 5 * (self.num_player - 1) / 6 > input_list[0] > \
-                        self.dice_dict[input_list[0] - 1] + 5 * (self.num_player - 1) / 6 \
+                        self.dice_dict[input_list[1] - 1] + 5 * (self.num_player - 1) / 6 \
                         and real_most_frequent_value_face != 1 \
                         and real_most_frequent_value_face != input_list[1] \
                         and (int(real_most_frequent_value_num + 5 * (self.num_player - 1) / 6) > input_list[0]

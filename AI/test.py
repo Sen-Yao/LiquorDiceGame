@@ -1,4 +1,4 @@
-from GameAI import train
+from train import train
 from DumpAI import DumpAI
 from Qlearning import QlearningAIOneLevel
 from human import Human
