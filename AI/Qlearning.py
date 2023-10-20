@@ -34,10 +34,11 @@ class QlearningAIOneLevel(AI):
                             this_guess[0]][this_guess[1]][int(this_guess[2])])
         Q_value = (1 - lr) * Q_value + lr * reward
         if self.need_output or is_game:
-            print(self.name, '更新前 Q 值 为', float(self.Q_table[last_guess[0] + 1][last_guess[1] - 1][int(last_guess[2])][
-                                              self.dice[0] - 1][self.dice[1] - 1][self.dice[2] - 1][self.dice[3] - 1][
-                                              self.dice[4] - 1][
-                                              this_guess[0]][this_guess[1]][int(this_guess[2])]),
+            print(self.name, '更新前 Q 值 为',
+                  float(self.Q_table[last_guess[0] + 1][last_guess[1] - 1][int(last_guess[2])][
+                            self.dice[0] - 1][self.dice[1] - 1][self.dice[2] - 1][self.dice[3] - 1][
+                            self.dice[4] - 1][
+                            this_guess[0]][this_guess[1]][int(this_guess[2])]),
                   'reward=', reward, '更新后 Q_value=', Q_value)
         self.Q_table[last_guess[0] + 1][last_guess[1] - 1][int(last_guess[2])][
             self.dice[0] - 1][self.dice[1] - 1][self.dice[2] - 1][self.dice[3] - 1][self.dice[4] - 1][
@@ -72,6 +73,8 @@ class QlearningAIOneLevel(AI):
                 self.dice[0] - 1][self.dice[1] - 1][self.dice[2] - 1][self.dice[3] - 1][self.dice[4] - 1]
             # Find the biggest Q in new_Q_table
             max_value = torch.max(new_Q_table)
+            # if max_value < 0:
+            #    print("居然小于零？我看看", new_Q_table)
             float_tensor = new_Q_table.dequantize()
             max_index = torch.argmax(float_tensor)
             self.guess[2] = bool(max_index % 2)

@@ -64,6 +64,9 @@ def judge_open(input_guess, num_player, player_list, need_output=False):
         else:
             total_dice = int(player_list[i].dice_dict[input_guess[1] - 1]) + total_dice
     if total_dice < input_guess[0]:
+        print("debug1:", player_list[0].dice_dict)
+        print("debug2:", player_list[1].dice_dict)
+        print('total_dice', total_dice, 'input', input_guess[0])
         if need_output:
             print('开成功')
         return True
@@ -141,12 +144,16 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
     player_list[0] = targetAI(num_player, need_output)
     player_list[0].name = '1'
     player_list[1].name = '2'
+    if is_game:
+        player_list[1].name = 'player'
+    else:
+        player_list[1].name = '2'
+        player_list[1].Q_table = torch.load('tensor/tensor2.pt')
     print(player_list[0].Q_table.shape)
     player_list[0].player_id = 1
     # torch.save(player_list[0].Q_table, 'tensor/tensor1.pt')
     # torch.save(player_list[1].Q_table, 'tensor/tensor2.pt')
     player_list[0].Q_table = torch.load('tensor/tensor1.pt')
-    player_list[1].Q_table = torch.load('tensor/tensor2.pt')
     win = 0
     for e in range(epoch):
         if e % 10000 == 9999:
@@ -155,12 +162,14 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
         if e % 100000 == 0 or is_game:
             print('已保存')
             torch.save(player_list[0].Q_table, 'tensor/tensor1.pt')
-            torch.save(player_list[1].Q_table, 'tensor/tensor2.pt')
-            print('大小为', player_list[0].Q_table.storage().size())
+            if not is_game:
+                torch.save(player_list[1].Q_table, 'tensor/tensor2.pt')
+            print('大小为', player_list[0].Q_table.untyped_storage().size())
         if need_output:
             print('\n\n\nepoch=', e)
         for player in player_list:
             player.ShakeDice()
+            print('debug:dice=', player.dice, 'dict = ', player.dice_dict)
         state = [-1, 0, False]
         temp_state = [-1, 1, False]
         mark_state = [-1, 2, False]
@@ -203,9 +212,9 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
                     if is_game or need_output:
                         print('开成功了！')
                         if i == 0:
-                            print('对方的骰子为', player_list[num_player-1].dice)
+                            print('对方的骰子为', player_list[num_player - 1].dice)
                         else:
-                            print('对方的骰子为', player_list[i-1].dice)
+                            print('对方的骰子为', player_list[i - 1].dice)
                         print('\n\n\n')
                     if isinstance(player_list[i], targetAI):
                         if need_output:
@@ -217,7 +226,7 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
                     if i == 0:
                         if isinstance(player_list[num_player - 1], targetAI):
                             if need_output:
-                                print(player_list[num_player-1].name, '在', mark_state, '下选择', state, '受到了惩罚')
+                                print(player_list[num_player - 1].name, '在', mark_state, '下选择', state, '受到了惩罚')
                             player_list[num_player - 1].update_Q(mark_state, state, -50, lr, is_game)
                     else:
                         if isinstance(player_list[i - 1], targetAI):
@@ -231,9 +240,9 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
                     if is_game or need_output:
                         print('开失败了！')
                         if i == 0:
-                            print('对方的骰子为', player_list[num_player-1].dice)
+                            print('对方的骰子为', player_list[num_player - 1].dice)
                         else:
-                            print('对方的骰子为', player_list[i-1].dice)
+                            print('对方的骰子为', player_list[i - 1].dice)
                         print('\n\n\n')
                     # Punish AI
                     # open the initial
@@ -243,14 +252,14 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
                         player_list[i].update_Q(state, temp_state, -100, lr, is_game)
                         break
                     # Normal error open
-                    elif isinstance(player_list[i], targetAI):
-                        # print('update Q =', player_list[i].update_Q)
-                        if need_output:
-                            print(player_list[i].name, '在', state, '下选择', temp_state, '受到了惩罚')
-                        player_list[i].update_Q(state, temp_state, -50, lr, is_game)
-
-                        # Reward last AI
+                    else:
+                        if isinstance(player_list[i], targetAI):
+                            # print('update Q =', player_list[i].update_Q)
+                            if need_output:
+                                print(player_list[i].name, '在', state, '下选择', temp_state, '受到了惩罚')
+                            player_list[i].update_Q(state, temp_state, -50, lr, is_game)
                         if i == 0:
+                            # Reward last AI
                             if isinstance(player_list[num_player - 1], targetAI):
                                 if need_output:
                                     print(player_list[num_player - 1].name, '在', mark_state, '下选择', state,
@@ -263,8 +272,4 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
                                     print(player_list[i - 1].name, '在', mark_state, '下选择', state, '受到了奖励')
                                 player_list[i - 1].update_Q(mark_state, state, 20, lr, is_game)
                                 win += 1
-                        break
-                    else:
-                        if need_output:
-                            print('Nothing append?')
                         break
