@@ -132,9 +132,7 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
     :param coachAI: The kind of AI that coach the targetAI
     :return: None
 
-    TODO: Add support to need_output
-    TODO: Rebuild args of lr and df
-    TODO: Allow coachAI to be QlearningAIOneLevel
+    TODO: Edit mark mechanism
     """
     player_list = []
     for player in range(num_player):
@@ -145,8 +143,8 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
     player_list[1].name = '2'
     print(player_list[0].Q_table.shape)
     player_list[0].player_id = 1
-    # torch.save(player_list[0].Q_table, './tensor1.pt')
-    # torch.save(player_list[1].Q_table, './tensor2.pt')
+    # torch.save(player_list[0].Q_table, 'tensor/tensor1.pt')
+    # torch.save(player_list[1].Q_table, 'tensor/tensor2.pt')
     player_list[0].Q_table = torch.load('tensor/tensor1.pt')
     player_list[1].Q_table = torch.load('tensor/tensor2.pt')
     win = 0
@@ -174,7 +172,9 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
                 # temp_state is made by this player, but not confirm yet
                 # mark_state is made by previous player of the previous player, used to update Q of the previous player.
                 print('flag0:mark=', mark_state)
+                print('id:', id(mark_state), id(state), id(temp_state))
                 temp_state = player_list[i].Decide(state, ge)
+                print('id:', id(mark_state), id(state), id(temp_state))
                 print('flag1:mark=', mark_state)
                 # illegal guess
                 while not judge_legal_guess(state, temp_state, num_player):
@@ -196,7 +196,7 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
                         else:
                             if isinstance(player_list[i - 1], targetAI):
                                 player_list[i - 1].update_Q(mark_state, state, 1, lr, is_game)
-
+                print('id:', id(mark_state), id(state), id(temp_state))
                 mark_state = state
                 print('mark_state change to', mark_state)
                 state = temp_state
