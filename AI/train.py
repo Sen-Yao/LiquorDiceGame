@@ -11,6 +11,7 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
     """
     train main program.
 
+    :param use_stuck:
     :param is_game:
     :param targetAI: The kind of AI that need to be trained
     :param num_player: The number of player during training
@@ -59,13 +60,13 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
             print('\n第', e+1, '局游戏开始！')
         player_list[0].epoch = e
         if e % 100 == 99 and isinstance(player_list[0], QlearningAIOneLevel) and use_stuck:
-            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), 'epoch=', epoch, '近一百场胜率为',
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), 'epoch=', e, '近一百场胜率为',
                   float(win / 1), '%', '发现了', player_list[0].zero_detect, '次 Q 值为零')
             player_list[0].zero_detect = 0
             win = 0
         if e % 10000 == 9999 and isinstance(player_list[0], QlearningAIOneLevel) and not use_stuck:
-            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), 'epoch=', epoch, '近一百场胜率为',
-                  float(win / 1), '%', '发现了', player_list[0].zero_detect, '次 Q 值为零')
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), 'epoch=', e, '近一万场胜率为',
+                  float(win / 100), '%', '发现了', player_list[0].zero_detect, '次 Q 值为零')
             player_list[0].zero_detect = 0
             win = 0
         if (e % 1000 == 999 or is_game) and use_stuck:
