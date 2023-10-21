@@ -206,45 +206,40 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
         state = [-1, 0, False]
         temp_state = [-1, 1, False]
         mark_state = [-1, 2, False]
-        guess = state
-        stuck_even_open = False
-        need_step_back = False
-        # print('mark_state', mark_state)
+        guess = None
+        target_guess = None
         while True:
             i = 0
             while i < num_player:
                 player_list[i].ShowDice()
-                if not stuck_even_open:
-                    guess = player_list[i].Decide(state, ge)
-                if isinstance(player_list[i], DQN_agent):
-                    stuck_even_open = True
-                    need_step_back = True
+                # Don't need stuck is a normal game, so initialize the generator
+                # If player don't need stuck, it is either coach or a target AI finished it's stuck
+                if not player_list[i].need_stuck:
+                    # It is a target AI, and it has output a valid guess, so now it needs to rebuild generator
+                    if isinstance(player_list[i], targetAI):
+                        target_guess = player_list[i].Decide(state, ge)
+                        temp_state = next(target_guess)
+                    # It is a coach
+                    else:
+                        guess = player_list[i].Decide(state, ge)
+                        temp_state = next(guess)
+                # It is a target AI, and it is still stuck
+                else:
+                    temp_state = next(target_guess)
                 # state is made by previous player
                 # temp_state is made by this player, but not confirm yet
                 # mark_state is made by previous player of the previous player,
-                # used to GetReward Q of the previous player.
-                if not stuck_even_open:
-                    guess = player_list[i].Decide(state, ge)
-                temp_state = next(guess)
-                if player_list[i].need_stuck:
-                    # illegal guess
-                    while not judge_legal_guess(state, temp_state, num_player):
-                        print(temp_state, '不是一个合法猜测！')
-                        if isinstance(player_list[i], targetAI):
-                            player_list[i].GetReward(state, temp_state, -100, lr, is_game)
-                            print('收到-100的惩罚')
+                # used to GetReward of the previous player.
+                # Ask for guess until temp_state is a legal guess
+                while not judge_legal_guess(state, temp_state, num_player):
+                    print(temp_state, '不是一个合法猜测！')
+                    if isinstance(player_list[i], targetAI):
+                        player_list[i].GetReward(state, temp_state, -100, lr, is_game)
+                        print('收到-100的惩罚')
+                        temp_state = next(target_guess)
+                    else:
                         temp_state = next(guess)
-                    if temp_state[0] == num_player * 5 and temp_state[1] == 6 and temp_state[2]:
-                        player_list[i].need_stuck = False
-                        stuck_even_open = False
-                # Normal game, only one change to guess
-                else:
-                    # illegal guess
-                    while not judge_legal_guess(state, temp_state, num_player):
-                        if isinstance(player_list[i], targetAI):
-                            player_list[i].GetReward(state, temp_state, -100, lr, is_game)
-                        temp_state = next(guess)
-                # state is an Open
+                # the new guess is an Open
                 if temp_state[0] == 0:
                     # Open successful
                     if judge_open(state, num_player, player_list):
@@ -311,31 +306,43 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                                         print(player_list[i - 1].name, '在', mark_state, '下选择', state, '受到了奖励')
                                     player_list[i - 1].GetReward(mark_state, state, 20, lr, is_game)
                                     win += 1
-                    if need_step_back:
-                        temp_state = state
-                        state = mark_state
-                        i -= 1
-                        need_step_back = False
-                        continue
-                    else:
-                        mark_state = state
-                        state = temp_state
-                        i += 1
-                        continue
+
                 # Continue
                 else:
                     # This player choose continue, means previous player (maybe AI) survived, deserve a reward
                     # print('mark_state and state', mark_state, state)
-                    if mark_state[0] != -1:
-                        if i == 0:
-                            if isinstance(player_list[num_player - 1], targetAI):
-                                player_list[num_player - 1].GetReward(mark_state, state, 10, lr, is_game)
+
+                    if i == 0:
+                        if isinstance(player_list[num_player - 1], targetAI):
+                            player_list[num_player - 1].GetReward(mark_state, state, 10, lr, is_game)
+                            print(player_list[num_player-1].name, '因为逃过一劫获得了 10 的奖励')
+                        if player_list[num_player - 1].need_stuck:
+                            temp_state = state
+                            state = mark_state
+                            i -= 1
+                            guess = player_list[num_player - 1].Decide(state, ge)
+                            print('时光倒流！')
                         else:
-                            if isinstance(player_list[i - 1], targetAI):
-                                player_list[i - 1].GetReward(mark_state, state, 10, lr, is_game)
-                mark_state = state
-                state = temp_state
-                i += 1
+                            mark_state = state
+                            state = temp_state
+                            i += 1
+                        continue
+                    else:
+                        if isinstance(player_list[i - 1], targetAI):
+                            player_list[i - 1].GetReward(mark_state, state, 10, lr, is_game)
+                            print(player_list[i - 1].name, '因为逃过一劫获得了 10 的奖励')
+                            if player_list[i - 1].need_stuck:
+                                temp_state = state
+                                state = mark_state
+                                guess = player_list[i - 1].Decide(state, ge)
+                                i -= 1
+                                print('时光倒流！')
+                            else:
+                                mark_state = state
+                                state = temp_state
+                                i += 1
+                            continue
+
             if temp_state[0] == 0:
                 # open successful
                 break

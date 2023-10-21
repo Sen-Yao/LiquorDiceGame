@@ -17,7 +17,9 @@ class DQN_agent(AI):
         self.reward_vector = torch.zeros((self.length_of_guess_vector, ))
         self.learning_rate = 0.1
         self.name = 'DQN'
-        self.need_stuck = True
+        self.guess = [-1, -1, False, self.name]
+        self.need_stuck = False
+
 
     def InitNet(self):
         # Initial net
@@ -38,7 +40,9 @@ class DQN_agent(AI):
         print(f'epoch {self.epoch + 1}, loss {loss:f}')
 
     def Decide(self, last_guess, ge):
+        self.guess[3] = self.name
         # Initial input vector
+        self.need_stuck = True
         while self.need_stuck:
             for index in range(self.length_of_guess_vector):
                 self.guess[2] = bool(index % 2)
@@ -89,7 +93,6 @@ class DQN_agent(AI):
                 else:
                     print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1])
                     print(self.guess)
-            self.need_stuck = True
             yield self.guess
 
     def GetReward(self, last_guess, this_guess, reward, lr, is_game):
