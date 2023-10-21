@@ -40,12 +40,12 @@ class QlearningAIOneLevel(AI):
                             this_guess[0]][this_guess[1]][int(this_guess[2])]) == 0 and Q_value != 0:
             self.zero_detect += 1
         if self.need_output or is_game:
-            print(self.name, '更新前 Q 值 为',
+            print('debug:', self.name, '更新前 Q 值 为',
                   float(self.Q_table[last_guess[0] + 1][last_guess[1] - 1][int(last_guess[2])][
                             self.dice[0] - 1][self.dice[1] - 1][self.dice[2] - 1][self.dice[3] - 1][
                             self.dice[4] - 1][
                             this_guess[0]][this_guess[1]][int(this_guess[2])]),
-                  'reward=', reward, '更新后 Q_value=', Q_value, '\n\n')
+                  'reward=', reward, '更新后 Q_value=', Q_value)
         self.Q_table[last_guess[0] + 1][last_guess[1] - 1][int(last_guess[2])][
             self.dice[0] - 1][self.dice[1] - 1][self.dice[2] - 1][self.dice[3] - 1][self.dice[4] - 1][
             this_guess[0]][this_guess[1]][int(this_guess[2])] = Q_value

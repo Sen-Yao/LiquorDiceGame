@@ -7,7 +7,6 @@ from utils import judge_legal_guess, judge_open
 import time
 
 
-
 def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game=False, use_stuck=False):
     """
     train main program.
@@ -56,16 +55,17 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
     win = 0
     print('正在开始……')
     for e in range(epoch):
+        if is_game:
+            print('\n第', e+1, '局游戏开始！')
         player_list[0].epoch = e
         if e % 100 == 99 and isinstance(player_list[0], QlearningAIOneLevel) and use_stuck:
-            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), '近一百场胜率为', float(win / 1), '%',
-                  '发现了', player_list[0].zero_detect, '次 Q 值为零')
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), 'epoch=', epoch, '近一百场胜率为',
+                  float(win / 1), '%', '发现了', player_list[0].zero_detect, '次 Q 值为零')
             player_list[0].zero_detect = 0
             win = 0
         if e % 10000 == 9999 and isinstance(player_list[0], QlearningAIOneLevel) and not use_stuck:
-            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), '近一万场胜率为', float(win / 100),
-                  '%',
-                  '发现了', player_list[0].zero_detect, '次 Q 值为零')
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), 'epoch=', epoch, '近一百场胜率为',
+                  float(win / 1), '%', '发现了', player_list[0].zero_detect, '次 Q 值为零')
             player_list[0].zero_detect = 0
             win = 0
         if (e % 1000 == 999 or is_game) and use_stuck:
@@ -130,14 +130,21 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                         temp_state = next(guess)
                 # the new guess is an Open
                 if temp_state[0] == 0:
+                    if is_game or need_output:
+                        print(player_list[i].name, '开了！！')
                     # Open successful
                     if judge_open(state, num_player, player_list):
                         if is_game or need_output:
-                            print('开成功了！')
-                            if i == 0:
-                                print('对方的骰子为', player_list[num_player - 1].dice)
+                            if is_game:
+                                if i != 0:
+                                    print('开成功了！您赢了！')
+                                else:
+                                    print(player_list[i].name, '开成功了！您输了！')
                             else:
-                                print('对方的骰子为', player_list[i - 1].dice)
+                                print(player_list[i].name, '开成功了！')
+                            print('大家的骰子为：')
+                            for player in player_list:
+                                print(player.name, player.dice.tolist())
                             print('\n\n')
                         if isinstance(player_list[i], targetAI) and i == 0:
                             if need_output:
@@ -178,11 +185,17 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                     # Open unsuccessful
                     else:
                         if is_game or need_output:
-                            print('开失败了！')
-                            if i == 0:
-                                print('对方的骰子为', player_list[num_player - 1].dice)
+                            if is_game:
+                                if i != 0:
+                                    print('开失败了！您输了！')
+                                else:
+                                    print(player_list[i].name, '开失败了！您赢了！')
                             else:
-                                print('对方的骰子为', player_list[i - 1].dice)
+                                print(player_list[i].name, '开失败了！')
+                            print('大家的骰子为：')
+                            for player in player_list:
+                                print(player.name, player.dice.tolist())
+                            print('\n\n')
                         # Punish AI
                         # open the initial
                         if state[0] < 1 and isinstance(player_list[i], targetAI) and i == 0:
