@@ -1,3 +1,4 @@
+import random
 import torch
 from torch import nn
 
@@ -14,11 +15,13 @@ class DQN_agent(AI):
         self.loss_function = nn.MSELoss()
         self.trainer = torch.optim.SGD(self.net.parameters(), lr=0.1)
         self.epoch = 0
+        self.last_epoch = self.epoch
         self.reward_vector = torch.zeros((self.length_of_guess_vector, ))
         self.learning_rate = 0.1
         self.name = 'DQN'
         self.guess = [-1, -1, False, self.name]
         self.need_stuck = False
+        self.avg_loss = 0
 
 
     def InitNet(self):
@@ -32,15 +35,19 @@ class DQN_agent(AI):
     def Update(self, input_last_guess):
         # Set args
         self.trainer = torch.optim.SGD(self.net.parameters(), lr=self.learning_rate)
-
         loss = self.loss_function(self.net(input_last_guess), self.reward_vector)
+        self.avg_loss += loss
         self.trainer.zero_grad()
         loss.backward()
         self.trainer.step()
-        print(f'epoch {self.epoch + 1}, loss {loss:f}')
+        if self.epoch % 1000 == 0 and self.last_epoch != self.epoch:
+            self.avg_loss = self.avg_loss // 1000
+            print(f'epoch {self.epoch}, avg_loss {self.avg_loss:f}')
+            self.last_epoch = self.epoch
 
-    def Decide(self, last_guess, ge):
-        self.guess[3] = self.name
+
+    def Decide(self, last_guess, greedy_epsilon):
+        self.guess = [-1, -1, False, self.name]
         # Initial input vector
         self.need_stuck = True
         while self.need_stuck:
@@ -62,7 +69,8 @@ class DQN_agent(AI):
                         print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1])
                         print(self.guess)
                 yield self.guess
-            print('已遍历所有可能！')
+            if self.need_output:
+                print('已遍历所有可能！')
             state_vector = [last_guess[0], last_guess[1], int(last_guess[2]), 0, 0, 0, 0, 0, 0]
             for i in range(6):
                 state_vector[3 + i] = self.dice_dict[i]
@@ -71,29 +79,48 @@ class DQN_agent(AI):
             self.need_stuck = False
             break
         while not self.need_stuck:
-            state_vector = [last_guess[0], last_guess[1], int(last_guess[2]), 0, 0, 0, 0, 0, 0]
-            for i in range(6):
-                state_vector[3+i] = self.dice_dict[i]
-            state_vector = torch.tensor(state_vector, dtype=torch.float)
-            guess_vector = self.net(state_vector)
-            max_index = torch.argmax(guess_vector)
-            if max_index == 120:
-                self.guess = [0, 0, 'False']
-            else:
-                self.guess[2] = bool(max_index % 2)
-                self.guess[1] = int(max_index % 12 // 2) + 1
-                self.guess[0] = int(max_index // 12) + 1
-            if self.need_output:
+            epsilon = random.random()
+            # is greedy
+            if epsilon < greedy_epsilon:
+                if self.need_output:
+                    print('贪婪！')
+                self.guess = [random.randint(0, 5 * self.num_player), random.randint(0, 6), bool(random.randint(0, 1))]
                 if self.guess[0] == 0:
-                    print(self.guess[0], self.guess[1], self.guess[2])
-                    print(self.name, '玩家选择开！')
+                    if self.need_output:
+                        print(self.name, '玩家玩家选择开！')
+                    yield self.guess
                 if self.guess[2]:
-                    print(self.name, '玩家家喊出', self.guess[0], '个', self.guess[1], '斋')
-                    print(self.guess)
+                    if self.need_output:
+                        print(self.name, '玩家玩家喊出', self.guess[0], '个', self.guess[1], '斋')
+                    yield self.guess
                 else:
-                    print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1])
-                    print(self.guess)
-            yield self.guess
+                    if self.need_output:
+                        print(self.name, '玩家玩家喊出', self.guess[0], '个', self.guess[1])
+                    yield self.guess
+            else:
+                state_vector = [last_guess[0], last_guess[1], int(last_guess[2]), 0, 0, 0, 0, 0, 0]
+                for i in range(6):
+                    state_vector[3+i] = self.dice_dict[i]
+                state_vector = torch.tensor(state_vector, dtype=torch.float)
+                guess_vector = self.net(state_vector)
+                max_index = torch.argmax(guess_vector)
+                if max_index == 120:
+                    self.guess = [0, 0, False]
+                else:
+                    self.guess[2] = bool(max_index % 2)
+                    self.guess[1] = int(max_index % 12 // 2) + 1
+                    self.guess[0] = int(max_index // 12) + 1
+                if self.need_output:
+                    if self.guess[0] == 0:
+                        print(self.guess[0], self.guess[1], self.guess[2])
+                        print(self.name, '玩家选择开！')
+                    if self.guess[2]:
+                        print(self.name, '玩家家喊出', self.guess[0], '个', self.guess[1], '斋')
+                        print(self.guess)
+                    else:
+                        print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1])
+                        print(self.guess)
+                yield self.guess
 
     def GetReward(self, last_guess, this_guess, reward, lr, is_game):
         max_index = 12 * (this_guess[0] - 1)

@@ -28,7 +28,7 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
         player_list[player].name = str(player + 1)
         if isinstance(coachAI, QlearningAIOneLevel):
             try:
-                player_list[player].Q_table = torch.load('tensor/num'+str(num_player)+'.pt')
+                player_list[player].Q_table = torch.load('tensor/num' + str(num_player) + '.pt')
             except AttributeError:
                 torch.save(player_list[player].Q_table, 'tensor/num' + str(num_player) + '.pt')
     player_list[0] = targetAI(num_player, need_output)
@@ -44,7 +44,7 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
         if e % 100000 == 0 or is_game:
             print('已保存')
             if isinstance(targetAI, QlearningAIOneLevel):
-                torch.save(player_list[0].Q_table, 'tensor/num'+str(num_player)+'.pt')
+                torch.save(player_list[0].Q_table, 'tensor/num' + str(num_player) + '.pt')
         if need_output:
             print('\n\n\nepoch=', e)
         for player in player_list:
@@ -64,7 +64,8 @@ def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game
                 temp_state = player_list[i].Decide(state, ge)
                 # illegal guess
                 while not judge_legal_guess(state, temp_state, num_player):
-                    print(temp_state, '不是一个合法猜测！')
+                    if need_output:
+                        print(temp_state, '不是一个合法猜测！')
                     if isinstance(player_list[i], targetAI):
                         player_list[i].GetReward(state, temp_state, -100, lr, is_game)
                     temp_state = player_list[i].Decide(state, ge)
@@ -178,27 +179,38 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
         player_list[player].name = str(player + 1)
         if isinstance(player_list[player], QlearningAIOneLevel):
             try:
-                player_list[player].Q_table = torch.load('tensor/num'+str(num_player)+'.pt')
+                player_list[player].Q_table = torch.load('model/QlearningOneLevel/num' + str(num_player) + '.pt')
             except AttributeError:
-                torch.save(player_list[player].Q_table, 'tensor/num' + str(num_player) + '.pt')
+                torch.save(player_list[player].Q_table, 'model/QlearningOneLevel/num' + str(num_player) + '.pt')
     player_list[0] = targetAI(num_player, need_output)
     if isinstance(player_list[0], QlearningAIOneLevel):
         try:
-            player_list[0].Q_table = torch.load('tensor/num' + str(num_player) + '.pt')
+            player_list[0].Q_table = torch.load('model/QlearningOneLevel/num' + str(num_player) + '.pt')
         except AttributeError:
-            torch.save(player_list[0].Q_table, 'tensor/num' + str(num_player) + '.pt')
+            torch.save(player_list[0].Q_table, 'model/QlearningOneLevel/num' + str(num_player) + '.pt')
+    if isinstance(player_list[0], DQN_agent):
+        try:
+            player_list[0].net.load_state_dict(torch.load('model/QlearningOneLevel/num' + str(num_player) + '.pt'))
+        except FileNotFoundError:
+            torch.save(player_list[0].net.state_dict(), 'model/DQN/num' + str(num_player) + '.pth')
+
     if is_game:
         player_list[1].name = 'player'
 
     win = 0
+
     for e in range(epoch):
+        player_list[0].epoch = e
         if e % 10000 == 9999:
-            print('近一万场胜率为', float(win / 100), '%')
+            # print('近一万场胜率为', float(win / 100), '%')
             win = 0
         if e % 100000 == 0 or is_game:
             if isinstance(player_list[0], QlearningAIOneLevel):
-                torch.save(player_list[0].Q_table, 'tensor/num'+str(num_player)+'.pt')
+                torch.save(player_list[0].Q_table, 'model/QlearningOneLevel/num' + str(num_player) + '.pt')
                 print('已保存')
+        if e % 10000 == 0 and isinstance(player_list[0], DQN_agent):
+            torch.save(player_list[0].net.state_dict(), 'model/DQN/num' + str(num_player) + '.pth')
+            print('已保存')
         if need_output:
             print('\n\n\nepoch=', e)
         for player in player_list:
@@ -232,10 +244,12 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                 # used to GetReward of the previous player.
                 # Ask for guess until temp_state is a legal guess
                 while not judge_legal_guess(state, temp_state, num_player):
-                    print(temp_state, '不是一个合法猜测！')
+                    if need_output:
+                        print(temp_state, '不是一个合法猜测！')
                     if isinstance(player_list[i], targetAI):
                         player_list[i].GetReward(state, temp_state, -100, lr, is_game)
-                        print('收到-100的惩罚')
+                        if need_output:
+                            print('收到-100的惩罚')
                         temp_state = next(target_guess)
                     else:
                         temp_state = next(guess)
@@ -249,7 +263,7 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                                 print('对方的骰子为', player_list[num_player - 1].dice)
                             else:
                                 print('对方的骰子为', player_list[i - 1].dice)
-                            print('\n\n\n')
+                            print('\n\n')
                         if isinstance(player_list[i], targetAI):
                             if need_output:
                                 print(player_list[i].name, '在', state, '下选择', temp_state, '受到了奖励')
@@ -263,12 +277,33 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                                     print(player_list[num_player - 1].name, '在', mark_state, '下选择', state,
                                           '受到了惩罚')
                                 player_list[num_player - 1].GetReward(mark_state, state, -50, lr, is_game)
+                                if player_list[num_player - 1].need_stuck:
+                                    temp_state = state
+                                    state = mark_state
+                                    i -= 1
+                                    if need_output:
+                                        print('时光倒流！')
+                                else:
+                                    mark_state = state
+                                    state = temp_state
+                                    i += 1
+                                continue
                         else:
                             if isinstance(player_list[i - 1], targetAI):
                                 if need_output:
-                                    print(player_list[i - 1].name, '在', mark_state, '下选择', temp_state, '受到了惩罚')
+                                    print(player_list[i - 1].name, '在', mark_state, '下选择', state, '受到了惩罚')
                                 player_list[i - 1].GetReward(mark_state, state, -50, lr, is_game)
-
+                                if player_list[i - 1].need_stuck:
+                                    temp_state = state
+                                    state = mark_state
+                                    i -= 1
+                                    if need_output:
+                                        print('时光倒流！')
+                                else:
+                                    mark_state = state
+                                    state = temp_state
+                                    i += 1
+                                continue
                     # Open unsuccessful
                     else:
                         if is_game or need_output:
@@ -284,14 +319,16 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                             if need_output:
                                 print('开到初始值了！', state, temp_state)
                             player_list[i].GetReward(state, temp_state, -100, lr, is_game)
-                            break
+
                         # Normal error open
                         else:
+                            # Punish AI
                             if isinstance(player_list[i], targetAI):
                                 # print('GetReward Q =', player_list[i].GetReward_Q)
                                 if need_output:
                                     print(player_list[i].name, '在', state, '下选择', temp_state, '受到了惩罚')
                                 player_list[i].GetReward(state, temp_state, -50, lr, is_game)
+                            # Reward last AI
                             if i == 0:
                                 # Reward last AI
                                 if isinstance(player_list[num_player - 1], targetAI):
@@ -300,13 +337,36 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                                               '受到了奖励')
                                     player_list[i].GetReward(mark_state, state, 20, lr, is_game)
                                     win += 1
+                                    if player_list[num_player - 1].need_stuck:
+                                        temp_state = state
+                                        state = mark_state
+                                        i -= 1
+                                        if need_output:
+                                            print('时光倒流！')
+                                    else:
+                                        mark_state = state
+                                        state = temp_state
+                                        i += 1
+                                    continue
                             else:
                                 if isinstance(player_list[i - 1], targetAI):
                                     if need_output:
                                         print(player_list[i - 1].name, '在', mark_state, '下选择', state, '受到了奖励')
                                     player_list[i - 1].GetReward(mark_state, state, 20, lr, is_game)
                                     win += 1
+                                    if player_list[i - 1].need_stuck:
+                                        temp_state = state
+                                        state = mark_state
+                                        i -= 1
+                                        if need_output:
+                                            print('时光倒流！')
+                                    else:
+                                        mark_state = state
+                                        state = temp_state
+                                        i += 1
+                                    continue
 
+                    continue
                 # Continue
                 else:
                     # This player choose continue, means previous player (maybe AI) survived, deserve a reward
@@ -315,13 +375,14 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                     if i == 0:
                         if isinstance(player_list[num_player - 1], targetAI):
                             player_list[num_player - 1].GetReward(mark_state, state, 10, lr, is_game)
-                            print(player_list[num_player-1].name, '因为逃过一劫获得了 10 的奖励')
+                            if need_output:
+                                print(player_list[num_player - 1].name, '因为逃过一劫获得了 10 的奖励')
                         if player_list[num_player - 1].need_stuck:
                             temp_state = state
                             state = mark_state
                             i -= 1
-                            guess = player_list[num_player - 1].Decide(state, ge)
-                            print('时光倒流！')
+                            if need_output:
+                                print('时光倒流！')
                         else:
                             mark_state = state
                             state = temp_state
@@ -330,13 +391,14 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                     else:
                         if isinstance(player_list[i - 1], targetAI):
                             player_list[i - 1].GetReward(mark_state, state, 10, lr, is_game)
-                            print(player_list[i - 1].name, '因为逃过一劫获得了 10 的奖励')
+                            if need_output:
+                                print(player_list[i - 1].name, '因为逃过一劫获得了 10 的奖励')
                             if player_list[i - 1].need_stuck:
                                 temp_state = state
                                 state = mark_state
-                                guess = player_list[i - 1].Decide(state, ge)
                                 i -= 1
-                                print('时光倒流！')
+                                if need_output:
+                                    print('时光倒流！')
                             else:
                                 mark_state = state
                                 state = temp_state

@@ -27,7 +27,6 @@ class QlearningAIOneLevel(AI):
         self.trainable = True
         self.name = 'Q'
 
-
     def Update(self, last_guess, this_guess, reward, lr, is_game):
         # print(last_guess, this_guess)
         Q_value = float(self.Q_table[last_guess[0] + 1][last_guess[1] - 1][int(last_guess[2])][
@@ -59,7 +58,7 @@ class QlearningAIOneLevel(AI):
             # is greedy
             if epsilon < greedy_epsilon:
                 if self.need_output:
-                    print('贪婪！')
+                    print(self.name, '玩家选择贪婪！')
                 self.guess = [random.randint(0, 5 * self.num_player), random.randint(0, 6), bool(random.randint(0, 1))]
                 if self.guess[0] == 0:
                     if self.need_output:

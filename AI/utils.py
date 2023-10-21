@@ -14,9 +14,6 @@ def judge_open(input_guess, num_player, player_list, need_output=False):
         else:
             total_dice = int(player_list[i].dice_dict[input_guess[1] - 1]) + total_dice
     if total_dice < input_guess[0]:
-        print("debug1:", player_list[0].dice_dict)
-        print("debug2:", player_list[1].dice_dict)
-        print('total_dice', total_dice, 'input', input_guess[0])
         if need_output:
             print('开成功')
         return True
