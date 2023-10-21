@@ -22,6 +22,7 @@ class AI:
         self.dice_dict = [0, 0, 0, 0, 0, 0]
         self.need_output = need_output
         self.trainable = False
+        self.need_stuck = False
 
     def ShakeDice(self):
         self.dice_dict = [0, 0, 0, 0, 0, 0]
@@ -41,6 +42,3 @@ class AI:
     def ShowDice(self):
         if self.need_output:
             print(self.name, '玩家的骰子结果为', self.dice)
-
-    def rename(self, name):
-        self.name = name

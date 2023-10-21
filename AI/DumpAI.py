@@ -17,7 +17,7 @@ class DumpAI(AI):
         if self.need_output:
             print(self.name, '玩家的骰子结果为', self.dice)
 
-    def Decide(self, input_list, ge):
+    def Decide(self, input_list, ge, stuck):
         """
         The AI will react depends on its dices result only
         :return: An action list

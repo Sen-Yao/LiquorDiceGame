@@ -27,7 +27,7 @@ class QlearningAIOneLevel(AI):
         self.trainable = True
         self.name = 'Q'
 
-    def update_Q(self, last_guess, this_guess, reward, lr, is_game):
+    def Update(self, last_guess, this_guess, reward, lr, is_game):
         # print(last_guess, this_guess)
         Q_value = float(self.Q_table[last_guess[0] + 1][last_guess[1] - 1][int(last_guess[2])][
                             self.dice[0] - 1][self.dice[1] - 1][self.dice[2] - 1][self.dice[3] - 1][self.dice[4] - 1][
@@ -44,56 +44,60 @@ class QlearningAIOneLevel(AI):
             self.dice[0] - 1][self.dice[1] - 1][self.dice[2] - 1][self.dice[3] - 1][self.dice[4] - 1][
             this_guess[0]][this_guess[1]][int(this_guess[2])] = Q_value
 
-    def Decide(self, last_guess, greedy_epsilon):
+    def GetReward(self, last_guess, this_guess, reward, lr, is_game):
+        self.Update(last_guess, this_guess, reward, lr, is_game)
+
+    def Decide(self, last_guess, greedy_epsilon, need_stuck):
         """
         The AI will react depends on its dices result only
         :return: An action list
         """
-        self.guess = [0, 0, False]
-        epsilon = random.random()
-        # is greedy
-        if epsilon < greedy_epsilon:
-            if self.need_output:
-                print('贪婪！')
-            self.guess = [random.randint(0, 5 * self.num_player), random.randint(0, 6), bool(random.randint(0, 1))]
-            if self.guess[0] == 0:
+        while True:
+            self.guess = [0, 0, False]
+            epsilon = random.random()
+            # is greedy
+            if epsilon < greedy_epsilon:
                 if self.need_output:
-                    print(self.name, '玩家玩家选择开！')
-                return self.guess
-            if self.guess[2]:
-                if self.need_output:
-                    print(self.name, '玩家玩家喊出', self.guess[0], '个', self.guess[1], '斋')
-                return self.guess
+                    print('贪婪！')
+                self.guess = [random.randint(0, 5 * self.num_player), random.randint(0, 6), bool(random.randint(0, 1))]
+                if self.guess[0] == 0:
+                    if self.need_output:
+                        print(self.name, '玩家玩家选择开！')
+                    yield self.guess
+                if self.guess[2]:
+                    if self.need_output:
+                        print(self.name, '玩家玩家喊出', self.guess[0], '个', self.guess[1], '斋')
+                    yield self.guess
+                else:
+                    if self.need_output:
+                        print(self.name, '玩家玩家喊出', self.guess[0], '个', self.guess[1])
+                    yield self.guess
             else:
+                new_Q_table = self.Q_table[last_guess[0] + 1][last_guess[1] - 1][int(last_guess[2])][
+                    self.dice[0] - 1][self.dice[1] - 1][self.dice[2] - 1][self.dice[3] - 1][self.dice[4] - 1]
+                # Find the biggest Q in new_Q_table
+                max_value = torch.max(new_Q_table)
+                # if max_value < 0:
+                #    print("居然小于零？我看看", new_Q_table)
+                float_tensor = new_Q_table.dequantize()
+                max_index = torch.argmax(float_tensor)
+                self.guess[2] = bool(max_index % 2)
+                self.guess[1] = int(max_index % 14 // 2)
+                self.guess[0] = int(max_index // 14)
                 if self.need_output:
-                    print(self.name, '玩家玩家喊出', self.guess[0], '个', self.guess[1])
-                return self.guess
-        else:
-            new_Q_table = self.Q_table[last_guess[0] + 1][last_guess[1] - 1][int(last_guess[2])][
-                self.dice[0] - 1][self.dice[1] - 1][self.dice[2] - 1][self.dice[3] - 1][self.dice[4] - 1]
-            # Find the biggest Q in new_Q_table
-            max_value = torch.max(new_Q_table)
-            # if max_value < 0:
-            #    print("居然小于零？我看看", new_Q_table)
-            float_tensor = new_Q_table.dequantize()
-            max_index = torch.argmax(float_tensor)
-            self.guess[2] = bool(max_index % 2)
-            self.guess[1] = int(max_index % 14 // 2)
-            self.guess[0] = int(max_index // 14)
-            if self.need_output:
-                print('依据位于', self.guess, '依据 Q 值为', float(max_value))
-            if self.guess[0] == 0:
-                if self.need_output:
-                    print(self.guess[0], self.guess[1], self.guess[2])
-                    print(self.name, '玩家选择开！')
-                return self.guess
-            if self.guess[2]:
-                if self.need_output:
-                    print(self.name, '玩家家喊出', self.guess[0], '个', self.guess[1], '斋')
-                    print(self.guess)
-                return self.guess
-            else:
-                if self.need_output:
-                    print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1])
-                    print(self.guess)
-                return self.guess
+                    print('依据位于', self.guess, '依据 Q 值为', float(max_value))
+                if self.guess[0] == 0:
+                    if self.need_output:
+                        print(self.guess[0], self.guess[1], self.guess[2])
+                        print(self.name, '玩家选择开！')
+                    yield self.guess
+                if self.guess[2]:
+                    if self.need_output:
+                        print(self.name, '玩家家喊出', self.guess[0], '个', self.guess[1], '斋')
+                        print(self.guess)
+                    yield self.guess
+                else:
+                    if self.need_output:
+                        print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1])
+                        print(self.guess)
+                    yield self.guess
