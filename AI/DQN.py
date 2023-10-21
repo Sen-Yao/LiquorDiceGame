@@ -52,7 +52,7 @@ class DQN_agent(AI):
             print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())),
                   f'epoch {self.epoch},抉择了', self.decide_try, '次，loss:', float(self.avg_loss), '，平均决策误差为', self.decide_loss)
             self.last_epoch = self.epoch
-            self.decide_loss = 0
+            self.decide_loss = 0.0
             self.avg_loss = 0
             self.decide_try = 0
 

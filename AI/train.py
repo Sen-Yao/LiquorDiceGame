@@ -4,6 +4,7 @@ from DumpAI import DumpAI
 from DQN import DQN_agent
 from Qlearning import QlearningAIOneLevel
 from utils import judge_legal_guess, judge_open
+import time
 
 
 def train(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_game=False):
@@ -198,17 +199,17 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
         player_list[1].name = 'player'
 
     win = 0
-
+    print('正在读取……')
     for e in range(epoch):
         player_list[0].epoch = e
-        if e % 10000 == 9999:
-            # print('近一万场胜率为', float(win / 100), '%')
+        if e % 10000 == 9999 and isinstance(player_list[0], QlearningAIOneLevel):
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), '近一万场胜率为', float(win / 100), '%')
             win = 0
-        if e % 100000 == 0 or is_game:
+        if e % 100000 == 99999 or is_game:
             if isinstance(player_list[0], QlearningAIOneLevel):
                 torch.save(player_list[0].Q_table, 'model/QlearningOneLevel/num' + str(num_player) + '.pt')
                 print('已保存')
-        if e % 1000 == 0 and isinstance(player_list[0], DQN_agent):
+        if e % 1000 == 999 and isinstance(player_list[0], DQN_agent):
             torch.save(player_list[0].net.state_dict(), 'model/DQN/num' + str(num_player) + '.pth')
             print('已保存')
         if need_output:
@@ -268,7 +269,6 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                             if need_output:
                                 print(player_list[i].name, '在', state, '下选择', temp_state, '受到了奖励')
                             player_list[i].GetReward(state, temp_state, 20, lr, is_game)
-                            win += 1
                             if player_list[i].need_stuck:
                                 temp_state = state
                                 state = mark_state
@@ -276,9 +276,11 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                                     i -= 1
                                 else:
                                     i = num_player - 1
-                                win -= 1
                                 if need_output:
                                     print('时光倒流！')
+                            else:
+                                win += 1
+                                break
 
                         # Punish last AI
                         if i == 0:
@@ -346,12 +348,10 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                                         print(player_list[num_player - 1].name, '在', mark_state, '下选择', state,
                                               '受到了奖励')
                                     player_list[i].GetReward(mark_state, state, 20, lr, is_game)
-                                    win += 1
                                     if player_list[num_player - 1].need_stuck:
                                         temp_state = state
                                         state = mark_state
                                         i -= 1
-                                        win -= 1
                                         if need_output:
                                             print('时光倒流！')
                                     else:
@@ -364,20 +364,19 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                                     if need_output:
                                         print(player_list[i - 1].name, '在', mark_state, '下选择', state, '受到了奖励')
                                     player_list[i - 1].GetReward(mark_state, state, 20, lr, is_game)
-                                    win += 1
                                     if player_list[i - 1].need_stuck:
                                         temp_state = state
                                         state = mark_state
                                         i -= 1
-                                        win -= 1
                                         if need_output:
                                             print('时光倒流！')
+                                        continue
                                     else:
                                         mark_state = state
                                         state = temp_state
                                         i += 1
-
-                                    continue
+                                        win += 1
+                                        break
 
                     continue
                 # Continue
