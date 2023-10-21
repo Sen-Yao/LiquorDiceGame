@@ -5,13 +5,11 @@ from DQN import DQN_agent
 from human import Human
 
 NumPlayer = 2
-LearningRate = 0.5
+LearningRate = 0.0001
 DiscountFactor = 0.5
 Greedy_Epsilon = 0.1
 Epoch = 1000000000
 
 # trainDQN(QlearningAIOneLevel, NumPlayer, False, LearningRate, DiscountFactor, Greedy_Epsilon, Epoch, Human, True)
-trainDQN(QlearningAIOneLevel, NumPlayer, False, LearningRate, DiscountFactor,
+trainDQN(DQN_agent, NumPlayer, False, LearningRate, DiscountFactor,
          Greedy_Epsilon, Epoch, QlearningAIOneLevel)
-
-print('test')

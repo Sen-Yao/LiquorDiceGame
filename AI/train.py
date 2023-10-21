@@ -42,11 +42,13 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
     if isinstance(player_list[0], QlearningAIOneLevel):
         try:
             player_list[0].Q_table = torch.load('model/QlearningOneLevel/num' + str(num_player) + '.pt')
+            print('已读取model/QlearningOneLevel/num' + str(num_player) + '.pth')
         except Exception:
             torch.save(player_list[0].Q_table, 'model/QlearningOneLevel/num' + str(num_player) + '.pt')
     if isinstance(player_list[0], DQN_agent):
         try:
             player_list[0].net.load_state_dict(torch.load('model/DQN/num' + str(num_player) + '.pth'))
+            print('已读取model/DQN/num' + str(num_player) + '.pth')
         except Exception:
             torch.save(player_list[0].net.state_dict(), 'model/DQN/num' + str(num_player) + '.pth')
 
@@ -83,7 +85,7 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                 for player in player_list:
                     if isinstance(player, QlearningAIOneLevel):
                         player.Q_table = torch.load('model/QlearningOneLevel/num' + str(num_player) + '.pt')
-        if e % 1000 == 999 and isinstance(player_list[0], DQN_agent):
+        if e % 10000 == 0 and isinstance(player_list[0], DQN_agent):
             torch.save(player_list[0].net.state_dict(), 'model/DQN/num' + str(num_player) + '.pth')
             print('已保存')
         if need_output:

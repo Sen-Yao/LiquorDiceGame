@@ -18,7 +18,7 @@ class DQN_agent(AI):
                                  nn.ReLU(),
                                  nn.Linear(256, self.length_of_guess_vector))
         self.loss_function = nn.MSELoss()
-        self.trainer = torch.optim.SGD(self.net.parameters(), lr=0.1)
+
         self.epoch = 0
         self.last_epoch = self.epoch
         self.reward_vector = torch.zeros((self.length_of_guess_vector,))
@@ -41,7 +41,8 @@ class DQN_agent(AI):
     def Update(self, input_last_guess):
         # Set args
         self.trainer = torch.optim.SGD(self.net.parameters(), lr=self.learning_rate)
-        loss = self.loss_function(self.net(input_last_guess), self.reward_vector)
+        expect_vector = self.net(input_last_guess)
+        loss = self.loss_function(expect_vector, self.reward_vector)
         self.avg_loss += loss
         self.trainer.zero_grad()
         loss.backward()
@@ -114,16 +115,16 @@ class DQN_agent(AI):
                     state_vector[3 + i] = self.dice_dict[i]
                 state_vector = torch.tensor(state_vector, dtype=torch.float)
                 guess_vector = self.net(state_vector)
-                max_index = torch.argmax(guess_vector)
+                max_index = int(torch.argmax(guess_vector))
                 if max_index == 120:
                     self.guess = [0, 0, False]
                 else:
                     self.guess[2] = bool(max_index % 2)
                     self.guess[1] = int(max_index % 12 // 2) + 1
                     self.guess[0] = int(max_index // 12) + 1
-                self.decide_loss += abs(int(guess_vector[max_index])-int(self.reward_vector[max_index]))
+                self.decide_loss += abs(float(guess_vector[max_index])-int(self.reward_vector[max_index]))
                 if self.need_output:
-                    print('依据 DQN 计算出的 Q 值，', int(guess_vector[max_index]))
+                    print('依据 DQN 计算出的 Q 值，', float(guess_vector[max_index]))
                     print('但实际上此处的 reward', int(self.reward_vector[max_index]))
                     if self.guess[0] == 0:
                         print(self.guess[0], self.guess[1], self.guess[2])
