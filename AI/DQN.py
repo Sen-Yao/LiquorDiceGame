@@ -7,6 +7,7 @@ from GameAI import AI
 
 
 class DQN_agent(AI):
+    print('111')
     def __init__(self, num_player, need_output=False):
         super().__init__(num_player, need_output)
         self.length_of_guess_vector = num_player * 60 + 1
