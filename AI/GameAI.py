@@ -2,7 +2,7 @@ import torch
 
 
 class AI:
-    def __init__(self, num_player, need_output):
+    def __init__(self, num_player, need_output,  allow_stuck=True):
         """
         Initialize the base information
 
@@ -23,6 +23,7 @@ class AI:
         self.need_output = need_output
         self.trainable = False
         self.need_stuck = False
+        self.allow_stuck = allow_stuck
 
     def ShakeDice(self):
         self.dice_dict = [0, 0, 0, 0, 0, 0]

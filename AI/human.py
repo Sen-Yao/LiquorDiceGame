@@ -17,7 +17,7 @@ class Human(AI):
         if self.need_output or isinstance(self, Human):
             print(self.name, '玩家的骰子结果为', self.dice)
 
-    def Decide(self, input_list, ge, stuck):
+    def Decide(self, input_list, ge):
         """
         The AI will react depends on its dices result only
         :return: An action list
