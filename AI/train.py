@@ -186,12 +186,12 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
     if isinstance(player_list[0], QlearningAIOneLevel):
         try:
             player_list[0].Q_table = torch.load('model/QlearningOneLevel/num' + str(num_player) + '.pt')
-        except AttributeError:
+        except Exception:
             torch.save(player_list[0].Q_table, 'model/QlearningOneLevel/num' + str(num_player) + '.pt')
     if isinstance(player_list[0], DQN_agent):
         try:
-            player_list[0].net.load_state_dict(torch.load('model/QlearningOneLevel/num' + str(num_player) + '.pt'))
-        except FileNotFoundError:
+            player_list[0].net.load_state_dict(torch.load('model/DQN/num' + str(num_player) + '.pth'))
+        except Exception:
             torch.save(player_list[0].net.state_dict(), 'model/DQN/num' + str(num_player) + '.pth')
 
     if is_game:
@@ -208,7 +208,7 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
             if isinstance(player_list[0], QlearningAIOneLevel):
                 torch.save(player_list[0].Q_table, 'model/QlearningOneLevel/num' + str(num_player) + '.pt')
                 print('已保存')
-        if e % 10000 == 0 and isinstance(player_list[0], DQN_agent):
+        if e % 1000 == 0 and isinstance(player_list[0], DQN_agent):
             torch.save(player_list[0].net.state_dict(), 'model/DQN/num' + str(num_player) + '.pth')
             print('已保存')
         if need_output:
@@ -269,6 +269,13 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                                 print(player_list[i].name, '在', state, '下选择', temp_state, '受到了奖励')
                             player_list[i].GetReward(state, temp_state, 20, lr, is_game)
                             win += 1
+                            if player_list[i].need_stuck:
+                                temp_state = state
+                                state = mark_state
+                                i -= 1
+                                win -= 1
+                                if need_output:
+                                    print('时光倒流！')
 
                         # Punish last AI
                         if i == 0:
@@ -341,6 +348,7 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                                         temp_state = state
                                         state = mark_state
                                         i -= 1
+                                        win -= 1
                                         if need_output:
                                             print('时光倒流！')
                                     else:
@@ -358,12 +366,14 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                                         temp_state = state
                                         state = mark_state
                                         i -= 1
+                                        win -= 1
                                         if need_output:
                                             print('时光倒流！')
                                     else:
                                         mark_state = state
                                         state = temp_state
                                         i += 1
+
                                     continue
 
                     continue
@@ -383,6 +393,7 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                             i -= 1
                             if need_output:
                                 print('时光倒流！')
+
                         else:
                             mark_state = state
                             state = temp_state

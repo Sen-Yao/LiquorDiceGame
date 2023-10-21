@@ -1,5 +1,6 @@
 import random
 import torch
+import time
 from torch import nn
 
 from GameAI import AI
@@ -11,7 +12,13 @@ class DQN_agent(AI):
         self.length_of_guess_vector = num_player * 60 + 1
         self.net = nn.Sequential(nn.Linear(9, 256),
                                  nn.ReLU(),
-                                 nn.Linear(256, self.length_of_guess_vector))
+                                 nn.Linear(256, 1024),
+                                 nn.ReLU(),
+                                 nn.Linear(1024, 4096),
+                                 nn.ReLU(),
+                                 nn.Linear(4096, 1024),
+                                 nn.ReLU(),
+                                 nn.Linear(1024, self.length_of_guess_vector))
         self.loss_function = nn.MSELoss()
         self.trainer = torch.optim.SGD(self.net.parameters(), lr=0.1)
         self.epoch = 0
@@ -40,9 +47,10 @@ class DQN_agent(AI):
         self.trainer.zero_grad()
         loss.backward()
         self.trainer.step()
-        if self.epoch % 1000 == 0 and self.last_epoch != self.epoch:
-            self.avg_loss = self.avg_loss // 1000
-            print(f'epoch {self.epoch}, avg_loss {self.avg_loss:f}')
+        if self.epoch % 100 == 0 and self.last_epoch != self.epoch:
+            self.avg_loss = self.avg_loss / 100
+
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), f'epoch {self.epoch}, avg_loss {self.avg_loss:f}')
             self.last_epoch = self.epoch
 
 

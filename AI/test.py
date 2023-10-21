@@ -5,9 +5,9 @@ from DQN import DQN_agent
 from human import Human
 
 NumPlayer = 2
-LearningRate = 0.01
+LearningRate = 0.005
 DiscountFactor = 0.5
-Greedy_Epsilon = 0.1
+Greedy_Epsilon = 0.01
 Epoch = 1000000000
 
 # trainDQN(QlearningAIOneLevel, NumPlayer, False, LearningRate, DiscountFactor, Greedy_Epsilon, Epoch, Human, True)
