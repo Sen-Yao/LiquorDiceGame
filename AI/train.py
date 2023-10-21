@@ -180,7 +180,7 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
         if isinstance(player_list[player], QlearningAIOneLevel):
             try:
                 player_list[player].Q_table = torch.load('model/QlearningOneLevel/num' + str(num_player) + '.pt')
-            except AttributeError:
+            except Exception:
                 torch.save(player_list[player].Q_table, 'model/QlearningOneLevel/num' + str(num_player) + '.pt')
     player_list[0] = targetAI(num_player, need_output)
     if isinstance(player_list[0], QlearningAIOneLevel):
@@ -272,7 +272,10 @@ def trainDQN(targetAI, num_player, need_output, lr, df, ge, epoch, coachAI, is_g
                             if player_list[i].need_stuck:
                                 temp_state = state
                                 state = mark_state
-                                i -= 1
+                                if i != 0:
+                                    i -= 1
+                                else:
+                                    i = num_player - 1
                                 win -= 1
                                 if need_output:
                                     print('时光倒流！')

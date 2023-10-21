@@ -14,22 +14,21 @@ class DQN_agent(AI):
                                  nn.ReLU(),
                                  nn.Linear(256, 1024),
                                  nn.ReLU(),
-                                 nn.Linear(1024, 4096),
+                                 nn.Linear(1024, 256),
                                  nn.ReLU(),
-                                 nn.Linear(4096, 1024),
-                                 nn.ReLU(),
-                                 nn.Linear(1024, self.length_of_guess_vector))
+                                 nn.Linear(256, self.length_of_guess_vector))
         self.loss_function = nn.MSELoss()
         self.trainer = torch.optim.SGD(self.net.parameters(), lr=0.1)
         self.epoch = 0
         self.last_epoch = self.epoch
-        self.reward_vector = torch.zeros((self.length_of_guess_vector, ))
+        self.reward_vector = torch.zeros((self.length_of_guess_vector,))
         self.learning_rate = 0.1
         self.name = 'DQN'
         self.guess = [-1, -1, False, self.name]
         self.need_stuck = False
         self.avg_loss = 0
-
+        self.decide_loss = 0
+        self.decide_try = 0
 
     def InitNet(self):
         # Initial net
@@ -47,14 +46,18 @@ class DQN_agent(AI):
         self.trainer.zero_grad()
         loss.backward()
         self.trainer.step()
-        if self.epoch % 100 == 0 and self.last_epoch != self.epoch:
-            self.avg_loss = self.avg_loss / 100
-
-            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), f'epoch {self.epoch}, avg_loss {self.avg_loss:f}')
+        if self.epoch % 1000 == 0 and self.last_epoch != self.epoch:
+            self.avg_loss = self.avg_loss / (1000 * self.length_of_guess_vector)
+            self.decide_loss = self.decide_loss / self.decide_try
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())),
+                  f'epoch {self.epoch},抉择了', self.decide_try, '次，loss:', float(self.avg_loss), '，平均决策误差为', self.decide_loss)
             self.last_epoch = self.epoch
-
+            self.decide_loss = 0
+            self.avg_loss = 0
+            self.decide_try = 0
 
     def Decide(self, last_guess, greedy_epsilon):
+        self.decide_try += 1
         self.guess = [-1, -1, False, self.name]
         # Initial input vector
         self.need_stuck = True
@@ -63,12 +66,12 @@ class DQN_agent(AI):
                 self.guess[2] = bool(index % 2)
                 self.guess[1] = int(index % 12 // 2) + 1
                 self.guess[0] = int(index // 12) + 1
+                if self.guess[0] == 11:
+                    self.guess[0] = 0
+                    self.guess[1] = 0
+                    self.guess[2] = False
                 if self.need_output:
                     if self.guess[0] == 11:
-                        self.guess[0] = 0
-                        self.guess[1] = 0
-                        self.guess[2] = False
-                        print(0, 0, False)
                         print(self.name, '玩家选择开！')
                     elif self.guess[2]:
                         print(self.name, '玩家家喊出', self.guess[0], '个', self.guess[1], '斋')
@@ -108,7 +111,7 @@ class DQN_agent(AI):
             else:
                 state_vector = [last_guess[0], last_guess[1], int(last_guess[2]), 0, 0, 0, 0, 0, 0]
                 for i in range(6):
-                    state_vector[3+i] = self.dice_dict[i]
+                    state_vector[3 + i] = self.dice_dict[i]
                 state_vector = torch.tensor(state_vector, dtype=torch.float)
                 guess_vector = self.net(state_vector)
                 max_index = torch.argmax(guess_vector)
@@ -118,7 +121,10 @@ class DQN_agent(AI):
                     self.guess[2] = bool(max_index % 2)
                     self.guess[1] = int(max_index % 12 // 2) + 1
                     self.guess[0] = int(max_index // 12) + 1
+                self.decide_loss += abs(int(guess_vector[max_index])-int(self.reward_vector[max_index]))
                 if self.need_output:
+                    print('依据 DQN 计算出的 Q 值，', int(guess_vector[max_index]))
+                    print('但实际上此处的 reward', int(self.reward_vector[max_index]))
                     if self.guess[0] == 0:
                         print(self.guess[0], self.guess[1], self.guess[2])
                         print(self.name, '玩家选择开！')
@@ -134,7 +140,7 @@ class DQN_agent(AI):
         max_index = 12 * (this_guess[0] - 1)
         max_index = 2 * (this_guess[1] - 1) + max_index
         max_index = int(this_guess[2]) + max_index
-
+        if self.need_output:
+            print('决定', this_guess, '产生了', reward, '反馈')
         self.learning_rate = lr
         self.reward_vector[max_index] = reward
-
