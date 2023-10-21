@@ -12,3 +12,5 @@ Epoch = 1000000000
 
 # trainDQN(QlearningAIOneLevel, NumPlayer, False, LearningRate, DiscountFactor, Greedy_Epsilon, Epoch, Human, True)
 trainDQN(QlearningAIOneLevel, NumPlayer, False, LearningRate, DiscountFactor, Greedy_Epsilon, Epoch, QlearningAIOneLevel)
+
+print('test')
