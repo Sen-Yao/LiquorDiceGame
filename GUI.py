@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt
 
 class GUI(QWidget):
 
-    def __init__(self,player_dice,current_player,last_guess,counts,results,is_action,illegal_guess):
+    def __init__(self,player_dice,current_player,last_guess,counts,results,is_action,previous_guess):
         super().__init__()
         self.user_input=None # 储存用户的输入
         self.is_open = False # 判断是否开
@@ -19,10 +19,10 @@ class GUI(QWidget):
         self.player_dice=player_dice # 玩家骰子结果,从服务器读取
         self.current_player=current_player # 玩家游戏序号,从服务器读取
         self.last_guess= last_guess# 上一游戏玩家的猜测
+        self.previous_guess=previous_guess # 记录过去所有玩家的猜测
         # 该变量储存实际上当前各玩家手上骰子的总和结果 依次代表有多少个1，2，3，4，5，6
         self.counts=counts
         self.results=results # 该变量储存开出来的胜负结果
-        self.illegal_guess=illegal_guess # 该变量储存输入是否符合斋飞规则
 
         self.initWindow()
 
@@ -75,7 +75,7 @@ class GUI(QWidget):
     # 该函数用于创建继续猜测的对话对象和读入用户输入
     def create_dialog(self):
         self.is_guess = True
-        dialog = Dialog(self.illegal_guess)
+        dialog = Dialog(self.previous_guess,self.current_player,self.last_guess)
         result = dialog.exec_()  # 显示对话窗口并等待用户交互
 
         if result == QDialog.Accepted and dialog.get_user_input is not None:
@@ -129,13 +129,16 @@ class GUI(QWidget):
 
 
 class Dialog(QDialog):
-    def __init__(self,illegal_guess):
+    def __init__(self,previous_guess,current_player,last_guess):
         super().__init__()
 
-        self.initDialog()
         self.user_input = None  # 初始化一个属性来保存用户输入
         self.is_use_one = False # 初始化一个布尔型变量保存是否喊一
-        self.illegal_guess = illegal_guess # 该变量储存输入是否符合斋飞规则
+        self.previous_guess=previous_guess # 记录过去所有玩家的猜测
+        self.current_player=current_player # 玩家游戏序号,从服务器读取
+        self.last_guess= last_guess# 上一游戏玩家的猜测
+        self.initDialog()
+        
     
     # 初始化对话栏 
     def initDialog(self):
@@ -145,7 +148,7 @@ class Dialog(QDialog):
         self.setLayout(self.layout)
 
         # 对话引导提示符
-        self.label = QLabel('输入你的猜测，以空格分隔(例如:7 4 1),最后一个数字0代表飞猜测，1代表斋猜测:', self)
+        self.label = QLabel('输入你的猜测，以空格分隔(例如:7 4 1),最后一个数字0代表飞猜测，1代表斋猜测:\n上一个玩家的猜测为'+str(self.last_guess), self)
         self.layout.addWidget(self.label)
 
         # 文本编辑创立
@@ -176,16 +179,50 @@ class Dialog(QDialog):
     # 验证用户文本输入
     def verify_input(self):
         user_input = self.text_input.text()
+
         # 使用正则表达式验证输入
-        input_pattern = r'^[0-9] [1-6] [0-1]$'  # 匹配输入要求
+        input_pattern = r'^[0-3][0-9] [1-6] [0-1]$'  # 匹配输入要求
         if not re.match(input_pattern, user_input) :
             QMessageBox.warning(self, '错误', '输入不符合规范，请重新输入（例如：7 4 1）', QMessageBox.Ok)
             self.text_input.clear() # 清空文本框
-        elif self.illegal_guess is True:
-            QMessageBox.warning(self, '输入非法', '输入不符合斋飞原则，请重新输入', QMessageBox.Ok)
-            self.text_input.clear() # 清空文本框
-        else:
-            self.ok_button.setEnabled(True)
+
+        guess=user_input.split()
+        # 将猜测值转化为整数（先前按照str格式保存）,同时检查输入的数字是否有效
+        guess_quantity = int(guess[0])
+        guess_value = int(guess[1])
+        guess_rule = int(guess[2])
+
+        if self.previous_guess != []:  # 先前猜测不为空列表（本回合不是第一回合）
+            last_guess = self.previous_guess[-1]  # 上一个玩家的猜测
+            last_guess_quantity = int(last_guess[0])
+            last_guess_value = int(last_guess[1])
+            last_rule = int(last_guess[2])
+            # 检查猜的值是否符合基本规则
+            # 如果为飞猜测
+            if guess_rule == 0:
+                if last_rule == 0:  # 上局为飞猜测，本局为飞猜测
+                    if guess_quantity <= last_guess_quantity and guess_value <= last_guess_value or guess_value == 1:
+                        QMessageBox.warning(self, '错误', '输入不符合斋飞规则，请重新输入', QMessageBox.Ok)
+                        self.text_input.clear() # 清空文本框
+                         
+                if last_rule == 1:  # 上局为斋猜测，本局为飞猜测
+                    if guess_quantity < last_guess_quantity * 2 and guess_value <= last_guess_value or guess_value == 1:
+                        QMessageBox.warning(self, '错误', '输入不符合斋飞规则，请重新输入', QMessageBox.Ok)
+                        self.text_input.clear() # 清空文本框
+            else:
+                if last_rule == 0:  # 上局为飞猜测，本局为斋猜测
+                    if guess_quantity < int((last_guess_quantity + 1) / 2) and guess_value <= last_guess_value:
+                        QMessageBox.warning(self, '错误', '输入不符合斋飞规则，请重新输入', QMessageBox.Ok)
+                        self.text_input.clear() # 清空文本框
+                if last_rule == 1:  # 上局为斋猜测，本局为斋猜测
+                    if guess_quantity <= last_guess_quantity and guess_value <= last_guess_value:
+                        QMessageBox.warning(self, '错误', '输入不符合斋飞规则，请重新输入', QMessageBox.Ok)
+                        self.text_input.clear() # 清空文本框 
+
+        guess[2] = bool(guess_rule)  # 把1或0转化为bool值，false代表飞猜，true代表斋猜
+        guess.append(self.current_player)  # 把玩家信息加入列表中，以便标识谁做出的猜测
+        self.previous_guess.append(guess)  # 做出正确猜测后将该猜测存入列表
+        self.ok_button.setEnabled(True)
 
     #返回用户勾选
     def verify_use_one(self):
@@ -199,5 +236,5 @@ class Dialog(QDialog):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     # use to test
-    ex = GUI(player_dice=[1,1,1,1,1,1],current_player=1,last_guess=[7,4,1],counts=[6,6,6,6,6,6],results=False,is_action=True,illegal_guess=True)
+    ex = GUI(player_dice=[1,1,1,1,1,1],current_player=1,last_guess=[7,4,1],counts=[6,6,6,6,6,6],results=False,is_action=True,previous_guess=[['7','4',True,'玩家1']])
     sys.exit(app.exec_())

@@ -54,12 +54,12 @@ class LiquorDiceGame:
                         print("无效猜测！请输入正确的猜测 !")
                         return self.make_guess()
                 if last_rule == 1:  # 上局为斋猜测，本局为飞猜测
-                    if guess_quantity <= last_guess_quantity * 2 and guess_value <= last_guess_value or guess_value == 1:
+                    if guess_quantity < last_guess_quantity * 2 and guess_value <= last_guess_value or guess_value == 1:
                         print("无效猜测！请输入正确的猜测 !")
                         return self.make_guess()
             else:
                 if last_rule == 0:  # 上局为飞猜测，本局为斋猜测
-                    if guess_quantity <= int((last_guess_quantity + 1) / 2) and guess_value <= last_guess_value:
+                    if guess_quantity < int((last_guess_quantity + 1) / 2) and guess_value <= last_guess_value:
                         print("无效猜测！请输入正确的猜测 !")
                         return self.make_guess()
                 if last_rule == 1:  # 上局为斋猜测，本局为斋猜测
