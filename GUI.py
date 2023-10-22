@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt
 
 class GUI(QWidget):
 
-    def __init__(self,player_dice,current_player,last_guess,counts,results):
+    def __init__(self,player_dice,current_player,last_guess,counts,results,is_action,illegal_guess):
         super().__init__()
         self.user_input=None # 储存用户的输入
         self.is_open = False # 判断是否开
@@ -15,12 +15,14 @@ class GUI(QWidget):
         self.is_guess = False # 判断是否继续猜测
         self.is_use_one=False # 判断是否喊一
 
+        self.is_action=is_action # 根据传入变量，判断现在是否轮到当前玩家        
         self.player_dice=player_dice # 玩家骰子结果,从服务器读取
         self.current_player=current_player # 玩家游戏序号,从服务器读取
         self.last_guess= last_guess# 上一游戏玩家的猜测
         # 该变量储存实际上当前各玩家手上骰子的总和结果 依次代表有多少个1，2，3，4，5，6
         self.counts=counts
-        self.results=results # 该变量储存开出来的结果
+        self.results=results # 该变量储存开出来的胜负结果
+        self.illegal_guess=illegal_guess # 该变量储存输入是否符合斋飞规则
 
         self.initWindow()
 
@@ -30,10 +32,17 @@ class GUI(QWidget):
         openButton = QPushButton("开")
         continueButton = QPushButton("继续猜测")
         jumpButton = QPushButton("跳开")
-        label = QLabel(
-            "欢迎使用LiquorDiceGame！\n您是" + str(self.current_player) + "号玩家" "\n您的骰子结果为" + ','.join(
-                map(str, self.player_dice)) +"\n上一玩家猜测结果为" + ','.join(map(str, self.last_guess))+ "\n请点击下方按钮做出您下一步的操作", self)
+        # 未到当前玩家时开和猜测不能用
+        openButton.setEnabled(False)
+        continueButton.setEnabled(False)
 
+
+        welcome_label = QLabel(
+            "欢迎使用LiquorDiceGame！\n您是" + str(self.current_player) + "号玩家" "\n您的骰子结果为" + ','.join(
+                map(str, self.player_dice)) +"\n上一玩家猜测结果为" + ','.join(map(str, self.last_guess)), self)
+        no_action_label = QLabel("\n当前未到您的轮次，但您可以选择跳开")
+        action_label=QLabel("\n当前轮到您的轮次，请从下面三个按钮中选择您要进行的操作")
+        
         # 对主界面进行盒布局
         hbox = QHBoxLayout()
         hbox.addWidget(openButton)
@@ -41,7 +50,14 @@ class GUI(QWidget):
         hbox.addWidget(jumpButton)
 
         vbox = QVBoxLayout()
-        vbox.addWidget(label)
+        vbox.addWidget(welcome_label)
+        # 根据顺序判断添加操作
+        if self.is_action is True:
+            vbox.addWidget(action_label)
+            openButton.setEnabled(True)
+            continueButton.setEnabled(True)
+        else:
+            vbox.addWidget(no_action_label)
         vbox.addLayout(hbox)
         self.setLayout(vbox)
 
@@ -59,7 +75,7 @@ class GUI(QWidget):
     # 该函数用于创建继续猜测的对话对象和读入用户输入
     def create_dialog(self):
         self.is_guess = True
-        dialog = Dialog()
+        dialog = Dialog(self.illegal_guess)
         result = dialog.exec_()  # 显示对话窗口并等待用户交互
 
         if result == QDialog.Accepted and dialog.get_user_input is not None:
@@ -113,12 +129,13 @@ class GUI(QWidget):
 
 
 class Dialog(QDialog):
-    def __init__(self):
+    def __init__(self,illegal_guess):
         super().__init__()
 
         self.initDialog()
         self.user_input = None  # 初始化一个属性来保存用户输入
         self.is_use_one = False # 初始化一个布尔型变量保存是否喊一
+        self.illegal_guess = illegal_guess # 该变量储存输入是否符合斋飞规则
     
     # 初始化对话栏 
     def initDialog(self):
@@ -160,9 +177,12 @@ class Dialog(QDialog):
     def verify_input(self):
         user_input = self.text_input.text()
         # 使用正则表达式验证输入
-        input_pattern = r'^[0-4][0-9] [1-6] [0-1]$'  # 匹配输入要求
-        if not re.match(input_pattern, user_input):
+        input_pattern = r'^[0-9] [1-6] [0-1]$'  # 匹配输入要求
+        if not re.match(input_pattern, user_input) :
             QMessageBox.warning(self, '错误', '输入不符合规范，请重新输入（例如：7 4 1）', QMessageBox.Ok)
+            self.text_input.clear() # 清空文本框
+        elif self.illegal_guess is True:
+            QMessageBox.warning(self, '输入非法', '输入不符合斋飞原则，请重新输入', QMessageBox.Ok)
             self.text_input.clear() # 清空文本框
         else:
             self.ok_button.setEnabled(True)
@@ -179,5 +199,5 @@ class Dialog(QDialog):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     # use to test
-    ex = GUI(player_dice=[1,1,1,1,1,1],current_player=1,last_guess=[7,4,2],counts=[6,6,6,6,6,6],results=False)
+    ex = GUI(player_dice=[1,1,1,1,1,1],current_player=1,last_guess=[7,4,1],counts=[6,6,6,6,6,6],results=False,is_action=True,illegal_guess=True)
     sys.exit(app.exec_())
