@@ -9,6 +9,7 @@ from GameAI import AI
 class DQN_agent(AI):
     def __init__(self, num_player, need_output=False):
         super().__init__(num_player, need_output)
+        self.trainer = None
         self.length_of_guess_vector = num_player * 60 + 1
         self.net = nn.Sequential(nn.Linear(9, 256),
                                  nn.ReLU(),
@@ -61,7 +62,8 @@ class DQN_agent(AI):
         self.decide_try += 1
         self.guess = [-1, -1, False, self.name]
         # Initial input vector
-        self.need_stuck = True
+        if self.allow_stuck:
+            self.need_stuck = True
         while self.need_stuck:
             for index in range(self.length_of_guess_vector):
                 self.guess[2] = bool(index % 2)
@@ -137,7 +139,7 @@ class DQN_agent(AI):
                         print(self.guess)
                 yield self.guess
 
-    def GetReward(self, last_guess, this_guess, reward, lr, is_game):
+    def GetReward(self, last_guess, this_guess, reward, lr):
         max_index = 12 * (this_guess[0] - 1)
         max_index = 2 * (this_guess[1] - 1) + max_index
         max_index = int(this_guess[2]) + max_index

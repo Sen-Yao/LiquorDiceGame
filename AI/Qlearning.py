@@ -1,5 +1,4 @@
 import torch
-import torch.quantization as quantization
 import random
 from GameAI import AI
 
@@ -33,19 +32,24 @@ class QlearningAIOneLevel(AI):
         Q_value = float(self.Q_table[last_guess[0] + 1][last_guess[1] - 1][int(last_guess[2])][
                             self.dice[0] - 1][self.dice[1] - 1][self.dice[2] - 1][self.dice[3] - 1][self.dice[4] - 1][
                             this_guess[0]][this_guess[1]][int(this_guess[2])])
+
         Q_value = (1 - lr) * Q_value + lr * reward
         if float(self.Q_table[last_guess[0] + 1][last_guess[1] - 1][int(last_guess[2])][
-                            self.dice[0] - 1][self.dice[1] - 1][self.dice[2] - 1][self.dice[3] - 1][
-                            self.dice[4] - 1][
-                            this_guess[0]][this_guess[1]][int(this_guess[2])]) == 0 and Q_value != 0:
+                     self.dice[0] - 1][self.dice[1] - 1][self.dice[2] - 1][self.dice[3] - 1][
+                     self.dice[4] - 1][
+                     this_guess[0]][this_guess[1]][int(this_guess[2])]) == 0 and Q_value != 0:
             self.zero_detect += 1
+            if self.need_output:
+                print('出现零！')
         if self.need_output or is_game:
-            print('debug:', self.name, '更新前 Q 值 为',
-                  float(self.Q_table[last_guess[0] + 1][last_guess[1] - 1][int(last_guess[2])][
-                            self.dice[0] - 1][self.dice[1] - 1][self.dice[2] - 1][self.dice[3] - 1][
-                            self.dice[4] - 1][
-                            this_guess[0]][this_guess[1]][int(this_guess[2])]),
-                  'reward=', reward, '更新后 Q_value=', Q_value)
+            print('debug:', self.name, '更新前 Q 值 为', float(self.Q_table[last_guess[0] + 1][last_guess[1] - 1][
+                                                                   int(last_guess[2])][
+                                                                   self.dice[0] - 1][self.dice[1] - 1][
+                                                                   self.dice[2] - 1][self.dice[3] - 1][
+                                                                   self.dice[4] - 1][
+                                                                   this_guess[0]][this_guess[1]][int(this_guess[2])]),
+                  'reward=', reward,
+                  '更新后 Q_value=', Q_value)
         self.Q_table[last_guess[0] + 1][last_guess[1] - 1][int(last_guess[2])][
             self.dice[0] - 1][self.dice[1] - 1][self.dice[2] - 1][self.dice[3] - 1][self.dice[4] - 1][
             this_guess[0]][this_guess[1]][int(this_guess[2])] = Q_value
@@ -89,7 +93,8 @@ class QlearningAIOneLevel(AI):
                 if epsilon < greedy_epsilon:
                     if self.need_output:
                         print(self.name, '玩家选择贪婪！')
-                    self.guess = [random.randint(0, 5 * self.num_player), random.randint(0, 6), bool(random.randint(0, 1))]
+                    self.guess = [random.randint(0, 5 * self.num_player), random.randint(0, 6),
+                                  bool(random.randint(0, 1))]
                     if self.guess[0] == 0:
                         if self.need_output:
                             print(self.name, '玩家玩家选择开！')

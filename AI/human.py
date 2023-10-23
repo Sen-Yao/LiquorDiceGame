@@ -1,4 +1,5 @@
 from GameAI import AI
+import time
 
 
 class Human(AI):
@@ -23,6 +24,7 @@ class Human(AI):
         :return: An action list
         """
         while True:
+            time.sleep(1.5)
             if input_list[0] == 0:
                 print('上一个玩家喊开！')
             elif input_list[2]:
