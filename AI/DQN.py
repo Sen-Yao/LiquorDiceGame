@@ -71,21 +71,7 @@ class DQN_agent(AI):
         epsilon = random.random()
         # is greedy
         if epsilon < greedy_epsilon:
-            if self.need_output:
-                print('贪婪！')
-            self.guess = [random.randint(0, 6) + last_guess[0], random.randint(1, 7), bool(random.randint(0, 1))]
-            if self.guess[0] == 0:
-                if self.need_output:
-                    print(self.name, '玩家玩家选择开！')
-                return self.guess
-            if self.guess[2]:
-                if self.need_output:
-                    print(self.name, '玩家玩家喊出', self.guess[0], '个', self.guess[1], '斋')
-                return self.guess
-            else:
-                if self.need_output:
-                    print(self.name, '玩家玩家喊出', self.guess[0], '个', self.guess[1])
-                return self.guess
+            return self.GreedyDecide(last_guess)
         else:
             state_vector = [last_guess[0], last_guess[1], int(last_guess[2]), 0, 0, 0, 0, 0, 0]
             for i in range(6):

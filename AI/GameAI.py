@@ -1,5 +1,5 @@
 import torch
-
+import random
 
 class AI:
     def __init__(self, num_player, need_output,  allow_stuck=True):
@@ -7,6 +7,8 @@ class AI:
         Initialize the base information
 
         """
+        self.net = None
+        self.epoch = None
         self.name = 'AI'
         self.num_player = num_player
         self.dice = torch.randint(1, 7, (5,))
@@ -43,3 +45,29 @@ class AI:
     def ShowDice(self):
         if self.need_output:
             print(self.name, '玩家的骰子结果为', self.dice)
+
+    def Decide(self, player_number, need_debug_info):
+        pass
+
+    def GreedyDecide(self, last_guess):
+        if self.need_output:
+            print('贪婪！')
+        if last_guess[0] == -1:
+            self.guess = [random.randint(0, 6) + self.num_player, random.randint(1, 7), bool(random.randint(0, 1))]
+        else:
+            epsilon2 = random.random()
+            if epsilon2 < 0.5:
+                if self.need_output:
+                    print(self.name, '玩家玩家选择开！')
+                self.guess = [0, 0, False]
+                return self.guess
+            else:
+                self.guess = [random.randint(0, 6) + last_guess[0], random.randint(1, 7), bool(random.randint(0, 1))]
+                if self.guess[2]:
+                    if self.need_output:
+                        print(self.name, '玩家玩家喊出', self.guess[0], '个', self.guess[1], '斋')
+                    return self.guess
+                else:
+                    if self.need_output:
+                        print(self.name, '玩家玩家喊出', self.guess[0], '个', self.guess[1])
+                    return self.guess

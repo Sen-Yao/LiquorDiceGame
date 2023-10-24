@@ -12,4 +12,4 @@ Greedy_Epsilon = 0
 Epoch = 1000000000
 
 # play(DQN_agent, 2, False)
-ergodic_train(DQN_agent, DumpAI, 0.001, 0, 0, 1, 8, False)
+ergodic_train(DQN_agent, DumpAI, 0.001, 0, 10, 8, True)
