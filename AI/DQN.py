@@ -6,6 +6,13 @@ from torch import nn
 from GameAI import AI
 
 
+def try_gpu(i=0):  #@save
+    """如果存在，则返回gpu(i)，否则返回cpu()"""
+    if torch.cuda.device_count() >= i + 1:
+        return torch.device(f'cuda:{i}')
+    return torch.device('cpu')
+
+
 class DQN_agent(AI):
     def __init__(self, num_player, need_output=False):
         super().__init__(num_player, need_output)
@@ -18,11 +25,11 @@ class DQN_agent(AI):
                                  nn.Linear(1024, 256),
                                  nn.ReLU(),
                                  nn.Linear(256, 61))
+        self.net.to(try_gpu())
         self.loss_function = nn.MSELoss()
-
         self.epoch = 0
         self.last_epoch = self.epoch
-        self.reward_vector = torch.zeros((61,))
+        self.reward_vector = torch.zeros((61,), device=try_gpu())
         self.learning_rate = 0.1
         self.name = 'DQN'
         self.guess = [-1, -1, False, self.name]
@@ -31,6 +38,7 @@ class DQN_agent(AI):
         self.decide_loss = 0
         self.decide_try = 0
         self.update_time = 0
+        self.trainer = torch.optim.SGD(self.net.parameters(), lr=self.learning_rate)
 
     def InitNet(self):
         # Initial net
@@ -43,9 +51,8 @@ class DQN_agent(AI):
     def Update(self, input_last_guess):
         # Set args
         self.update_time += 1
-        self.trainer = torch.optim.SGD(self.net.parameters(), lr=self.learning_rate)
         input_last_guess.append(self.num_player)
-        input_last_guess = torch.tensor(input_last_guess, dtype=torch.float)
+        input_last_guess = torch.tensor(input_last_guess, dtype=torch.float,  device=try_gpu())
         expect_vector = self.net(input_last_guess)
         loss = self.loss_function(expect_vector, self.reward_vector)
         self.avg_loss += loss
@@ -77,7 +84,7 @@ class DQN_agent(AI):
             for i in range(6):
                 state_vector[3 + i] = self.dice_dict[i]
             state_vector.append(self.num_player)
-            state_vector = torch.tensor(state_vector, dtype=torch.float)
+            state_vector = torch.tensor(state_vector, dtype=torch.float,  device=try_gpu())
             guess_vector = self.net(state_vector)
             max_index = int(torch.argmax(guess_vector))
             if max_index == 60:

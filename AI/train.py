@@ -1,6 +1,6 @@
 import torch
 from GameAI import AI
-from DQN import DQN_agent
+from DQN import DQN_agent, try_gpu
 from Qlearning import QlearningAIOneLevel
 from utils import judge_legal_guess, judge_open
 import time
@@ -282,7 +282,7 @@ def ergodic_load():
         # split into int list
         load_data = load_file.read()
         load_data = load_data[1:-1]
-        load_data = load_data.split(',')
+        load_data = load_data.split(', ')
         if load_data[0] == '':
             load_file.write('[0, 2, 1, 1, 0]')
         load_file.close()
@@ -306,7 +306,10 @@ def ergodic_sub_train(player_list, lr, ge, epoch, player_number, init_guess_dice
     while init_guess_dice_face < 7:
         if epoch == int(load_data[0]) and player_number == int(load_data[1]) and \
                 init_guess_dice_num == int(load_data[2]) and init_guess_dice_face == int(load_data[3]):
-            init_guess_zhai = int(load_data[4])
+            if load_data[4] == 'True':
+                init_guess_zhai = 1
+            if load_data[4] == 'False':
+                init_guess_zhai = 0
         else:
             init_guess_zhai = 0
         while init_guess_zhai <= 1:
@@ -552,6 +555,7 @@ def ergodic_sub_train(player_list, lr, ge, epoch, player_number, init_guess_dice
                 print('\n\n\n\n已保存训练结果\n\n')
             if isinstance(player_list[1], DQN_agent):
                 player_list[1].net = torch.load('model/DQN/test.pkl')
+                player_list[1].net = player_list[1].net.to(device=try_gpu())
                 print('已更新训练数据集\n\n\n\n')
             init_guess_zhai += 1
         init_guess_dice_face += 1
@@ -602,7 +606,7 @@ def ergodic_train(targetAI, coachAI, lr, ge, max_epoch, max_player_num, need_deb
             if isinstance(player_list[0], DQN_agent):
                 try:
                     player_list[0].net = torch.load('model/DQN/test.pkl')
-                    print('已读取model/DQN/test.pth')
+                    player_list[0].net = player_list[0].net.to(device=try_gpu())
                 except FileNotFoundError:
                     torch.save(player_list[0].net, 'model/DQN/test.pkl')
 
