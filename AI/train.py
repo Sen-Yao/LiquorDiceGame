@@ -269,10 +269,11 @@ def train(targetAI, num_player, need_output, lr, ge, epoch, coachAI, is_game=Fal
                 break
 
 
-def ergodic_save(epoch, player_number, init_guess_dice_num):
+def ergodic_save(epoch, player_number, init_guess):
     with open('train_data/ergodic_train_data.txt', mode='w') as hello:
-        save_list = [epoch, player_number, init_guess_dice_num]
+        save_list = [epoch, player_number, init_guess[0], init_guess[1], init_guess[2]]
         hello.write(str(save_list))
+        print('\n\n迭代文件保存成功\n\n')
 
 
 def ergodic_load():
@@ -283,28 +284,40 @@ def ergodic_load():
         load_data = load_data[1:-1]
         load_data = load_data.split(',')
         if load_data[0] == '':
-            load_file.write('[0, 2, 2]')
+            load_file.write('[0, 2, 1, 1, 0]')
         load_file.close()
         print('迭代文件已读取')
         return load_data
     except ValueError:
         with open('train_data/ergodic_train_data.txt', 'w') as hello:
-            hello.write('[0, 2, 2]')
+            hello.write('[0, 2, 1, 1, 0]')
             print('train_data/ergodic_train_data.txt 文件已创建')
         return ergodic_load()
 
 
-def ergodic_sub_train(player_list, lr, ge, player_number, init_guess_dice_num, need_debug_info):
+def ergodic_sub_train(player_list, lr, ge, epoch, player_number, init_guess_dice_num, need_debug_info):
+    load_data = ergodic_load()
     # ergodic init_guess
-    for init_guess_dice_face in range(1, 7):
-        for init_guess_zhai in range(2):
+    if epoch == int(load_data[0]) and player_number == int(load_data[1]) and \
+            init_guess_dice_num == int(load_data[2]):
+        init_guess_dice_face = int(load_data[3])
+    else:
+        init_guess_dice_face = 0
+    while init_guess_dice_face < 7:
+        if epoch == int(load_data[0]) and player_number == int(load_data[1]) and \
+                init_guess_dice_num == int(load_data[2]) and init_guess_dice_face == int(load_data[3]):
+            init_guess_zhai = int(load_data[4])
+        else:
+            init_guess_zhai = 0
+        while init_guess_zhai <= 1:
             # ergodic previous coach's dice
-            init_guess = [init_guess_dice_num, init_guess_dice_face, init_guess_zhai]
+            init_guess = [init_guess_dice_num, init_guess_dice_face, bool(init_guess_zhai)]
             if need_debug_info:
                 print('init_guess', init_guess)
             if not judge_legal_guess([-1, 0, False], init_guess, player_number):
                 if need_debug_info:
                     print('不合法的初始骰子')
+                init_guess_zhai += 1
                 continue
             for init_one_num in range(6):
                 for init_two_num in range(6 - init_one_num):
@@ -314,13 +327,108 @@ def ergodic_sub_train(player_list, lr, ge, player_number, init_guess_dice_num, n
                                     6 - init_one_num - init_two_num - init_three_num - init_four_num):
                                 init_six_num = 5 - init_one_num - init_two_num - init_three_num \
                                                - init_four_num - init_five_num
+
                                 # use coach to make a reasonable guess and dice for target AI
                                 player_list[1].dice_dict = [init_one_num, init_two_num, init_three_num,
                                                             init_four_num, init_five_num, init_six_num]
+                                last_guess = [-1, 0, False]
+                                for one_num in range(6):
+                                    for two_num in range(6 - one_num):
+                                        for three_num in range(6 - one_num - two_num):
+                                            for four_num in range(6 - one_num - two_num - three_num):
+                                                for five_num in range(
+                                                        6 - one_num - two_num - three_num - four_num):
+                                                    six_num = 5 - one_num - two_num - three_num - four_num - five_num
+                                                    player_list[0].dice_dict = [one_num, two_num, three_num,
+                                                                                four_num, five_num, six_num]
+                                                    if need_debug_info:
+                                                        print('当前骰子为', player_list[0].dice_dict)
+                                                    # ergodic targetAI's decide
+                                                    target_decide = [0, 0, False]
+
+                                                    for target_guess_dice_num in range(6):
+                                                        # target decide to open
+                                                        if target_guess_dice_num == 5:
+                                                            target_decide[0] = last_guess[0] + 5
+                                                            if need_debug_info:
+                                                                print('target,选择开')
+                                                            # open successful
+                                                            if judge_open(last_guess, player_number,
+                                                                          player_list):
+                                                                if need_debug_info:
+                                                                    print('开成功')
+                                                                player_list[0].GetReward(last_guess,
+                                                                                         target_decide, 50,
+                                                                                         lr)
+                                                            # open unsuccessful
+                                                            else:
+                                                                if need_debug_info:
+                                                                    print('开失败')
+                                                                player_list[0].GetReward(last_guess,
+                                                                                         target_decide, -50,
+                                                                                         lr)
+                                                        # Target decide to continue
+                                                        else:
+                                                            for target_guess_dice_face in range(1, 7):
+                                                                for target_guess_zhai in range(2):
+                                                                    target_decide[2] = bool(target_guess_zhai)
+                                                                    target_decide[0] = target_guess_dice_num + \
+                                                                                       player_number
+                                                                    target_decide[1] = target_guess_dice_face
+                                                                    if need_debug_info:
+                                                                        print('target 在', last_guess,
+                                                                              '和骰子',
+                                                                              player_list[0].dice_dict,
+                                                                              '下选择', target_decide)
+                                                                    if not judge_legal_guess(last_guess,
+                                                                                             target_decide,
+                                                                                             player_number):
+                                                                        player_list[0].GetReward(last_guess,
+                                                                                                 target_decide,
+                                                                                                 -100, lr)
+                                                                        if need_debug_info:
+                                                                            print('不合法')
+                                                                    else:
+                                                                        player_list[1].ShakeDice()
+                                                                        next_guess = player_list[1].Decide(
+                                                                            target_decide, ge)
+                                                                        if next_guess[0] != 0:
+                                                                            if need_debug_info:
+                                                                                print(
+                                                                                    '下个玩家没敢开，获得奖励')
+                                                                            player_list[0].GetReward(
+                                                                                last_guess, target_decide,
+                                                                                10, lr)
+                                                                        elif judge_open(target_decide,
+                                                                                        player_number,
+                                                                                        player_list):
+                                                                            if need_debug_info:
+                                                                                print(
+                                                                                    "下个玩家开了且开成功了")
+                                                                            player_list[0].GetReward(
+                                                                                last_guess, target_decide,
+                                                                                -50, lr)
+                                                                        else:
+                                                                            if need_debug_info:
+                                                                                print(
+                                                                                    "下个玩家开了但开失败了")
+                                                                            player_list[0].GetReward(
+                                                                                last_guess, target_decide,
+                                                                                20, lr)
+                                                    # 单纯是为了跑一下 loss
+                                                    player_list[0].Decide(last_guess, 0)
+                                                    # Build state vector to update
+                                                    state_vector = [last_guess[0],
+                                                                    last_guess[1],
+                                                                    bool(last_guess[2])]
+                                                    for dice_face in range(6):
+                                                        state_vector.append(
+                                                            player_list[0].dice_dict[dice_face])
+                                                    player_list[0].Update(state_vector)
                                 last_guess = player_list[1].Decide(init_guess, 0)
                                 # last guess is not legal, regenerate
                                 while not judge_legal_guess([init_guess_dice_num, init_guess_dice_face,
-                                                             init_guess_zhai], last_guess, player_number)\
+                                                             init_guess_zhai], last_guess, player_number) \
                                         or last_guess[0] == 0:
                                     last_guess = player_list[1].Decide(init_guess, 0.5)
                                 if need_debug_info:
@@ -366,19 +474,23 @@ def ergodic_sub_train(player_list, lr, ge, player_number, init_guess_dice_num, n
                                                             for target_guess_dice_face in range(1, 7):
                                                                 for target_guess_zhai in range(2):
                                                                     target_decide[2] = bool(target_guess_zhai)
-                                                                    if (target_decide[2] and not last_guess[2]) \
-                                                                            or (target_guess_dice_face == 1 and
-                                                                                last_guess[1] != 1):
+                                                                    # last is fei, and now target decide to zhai or 1
+                                                                    if (last_guess[1] != 1 and not last_guess[2]) \
+                                                                            and (target_guess_dice_face == 1 or
+                                                                                 target_guess_zhai):
                                                                         target_decide[0] = last_guess[0] // 2 \
                                                                                            + target_guess_dice_num
-                                                                    elif (not target_decide[2] and last_guess[2]) or \
-                                                                            (target_guess_dice_face != 1 and
-                                                                                last_guess[1] == 1):
+                                                                    # last is zhai or 1, and now target decide to fei
+                                                                    elif (last_guess[1] == 1 or last_guess[2]) \
+                                                                            and (target_guess_dice_face != 1 and
+                                                                                 not target_guess_zhai):
+                                                                        target_decide[0] = last_guess[0] // 2 \
+                                                                                           + target_guess_dice_num
                                                                         target_decide[0] = 2 * last_guess[0] \
                                                                                            + target_guess_dice_num
                                                                     else:
                                                                         target_decide[0] = target_guess_dice_num + \
-                                                                                 last_guess[0]
+                                                                                           last_guess[0]
                                                                     target_decide[1] = target_guess_dice_face
 
                                                                     if need_debug_info:
@@ -424,20 +536,39 @@ def ergodic_sub_train(player_list, lr, ge, player_number, init_guess_dice_num, n
                                                     # 单纯是为了跑一下 loss
                                                     player_list[0].Decide(last_guess, 0)
                                                     # Build state vector to update
-                                                    state_vector = [last_guess[0], last_guess[1], last_guess[2]]
+                                                    state_vector = [last_guess[0],
+                                                                    last_guess[1],
+                                                                    bool(last_guess[2])]
                                                     for dice_face in range(6):
-                                                        state_vector.append(player_list[0].dice_dict[dice_face])
+                                                        state_vector.append(
+                                                            player_list[0].dice_dict[dice_face])
                                                     player_list[0].Update(state_vector)
+                                ergodic_training_output(player_list, player_number,
+                                                        init_guess, [init_one_num, init_two_num, init_three_num,
+                                                                     init_four_num, init_five_num, init_six_num])
+            ergodic_save(epoch, player_number, init_guess)
+            if isinstance(player_list[0], DQN_agent):
+                torch.save(player_list[0].net, 'model/DQN/test.pkl')
+                print('\n\n\n\n已保存训练结果\n\n')
+            if isinstance(player_list[1], DQN_agent):
+                player_list[1].net = torch.load('model/DQN/test.pkl')
+                print('已更新训练数据集\n\n\n\n')
+            init_guess_zhai += 1
+        init_guess_dice_face += 1
 
 
-def ergodic_training_output(player_list, player_number, init_guess_dice_num):
-    player_list[0].avg_loss = \
-        player_list[0].avg_loss / (player_list[0].update_time * player_list[0].length_of_guess_vector)
+def ergodic_training_output(player_list, player_number, init_guess, init_dice):
+    player_list[0].avg_loss = player_list[0].avg_loss \
+                              / (player_list[0].update_time * player_list[0].length_of_guess_vector)
     player_list[0].decide_loss = player_list[0].decide_loss / player_list[0].decide_try
     print(time.strftime("\n%Y-%m-%d %H:%M:%S", time.localtime(time.time())),
-          f'epoch {player_list[0].epoch}，玩家人数为', player_number, '当前初始数字为:', init_guess_dice_num,
-          '\nloss=', float(player_list[0].avg_loss),
-          '，平均误差为', player_list[0].decide_loss)
+          f'epoch {player_list[0].epoch}，玩家人数为', player_number,
+          '当前初始状态为:', init_guess,
+          '初始骰子为:', init_dice,
+          '\n更新了', player_list[0].update_time, '次',
+          'loss=', float(player_list[0].avg_loss),
+          '，平均决策误差为', player_list[0].decide_loss)
+    player_list[0].update_time = 0
     player_list[0].decide_loss = 0.0
     player_list[0].decide_try = 0
     player_list[0].avg_loss = 0
@@ -479,13 +610,8 @@ def ergodic_train(targetAI, coachAI, lr, ge, max_epoch, max_player_num, need_deb
             while init_guess_dice_num < player_number * 3:
                 if need_debug_info:
                     print('init_guess_dice_num', init_guess_dice_num)
-                ergodic_sub_train(player_list, lr, ge, player_number, init_guess_dice_num, need_debug_info)
+                ergodic_sub_train(player_list, lr, ge, epoch, player_number, init_guess_dice_num, need_debug_info)
                 init_guess_dice_num += 1
-                ergodic_training_output(player_list, player_number, init_guess_dice_num)
-                ergodic_save(epoch, player_number, init_guess_dice_num)
-                if isinstance(player_list[1], DQN_agent):
-                    player_list[1].net = torch.load('model/DQN/test.pkl')
-                    print('已更新训练数据集')
             player_number += 1
 
         epoch += 1

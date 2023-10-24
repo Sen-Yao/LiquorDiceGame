@@ -33,7 +33,10 @@ def judge_legal_guess(last_guess, this_state, num_player):
     """
     # Is open or stater
     if this_state[0] <= 0:
-        return True
+        if last_guess[0] == -1:
+            return False
+        else:
+            return True
     # Illegal face
     if this_state[1] < 1 or this_state[1] > 6:
         return False

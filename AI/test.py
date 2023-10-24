@@ -11,5 +11,5 @@ DiscountFactor = 0.5
 Greedy_Epsilon = 0
 Epoch = 1000000000
 
-# play(DQN_agent, 2, False)
-ergodic_train(DQN_agent, DumpAI, 0.001, 0, 10, 8, True)
+play(DQN_agent, 2, True)
+ergodic_train(DQN_agent, DumpAI, 0.001, 0, 10, 8, False)

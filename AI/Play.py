@@ -39,10 +39,10 @@ def play(targetAI, num_player, need_debug_info):
                 torch.save(player_list[0].Q_table, 'model/QlearningOneLevel/num' + str(num_player) + '.pt')
         if isinstance(player_list[0], DQN_agent):
             try:
-                player_list[0].net.load_state_dict(torch.load('model/DQN/num' + str(num_player) + '.pth'))
-                print('已读取model/DQN/num' + str(num_player) + '.pth')
+                player_list[0].net = torch.load('model/DQN/test.pkl')
+                print('已读取 model/DQN/test.pkl')
             except Exception:
-                torch.save(player_list[0].net.state_dict(), 'model/DQN/num' + str(num_player) + '.pth')
+                torch.save(player_list[0].net, 'model/DQN/test.pkl')
 
     win = 0
     print('正在开始……')
@@ -55,7 +55,6 @@ def play(targetAI, num_player, need_debug_info):
         i = 0
         while True:
             while i < num_player:
-
                 # Don't need stuck is a normal game, so initialize the generator
                 # If player don't need stuck, it is either coach or a target AI finished it's stuck
                 temp_state = player_list[i].Decide(state, 0)

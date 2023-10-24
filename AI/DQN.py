@@ -10,7 +10,7 @@ class DQN_agent(AI):
     def __init__(self, num_player, need_output=False):
         super().__init__(num_player, need_output)
         self.trainer = None
-        self.length_of_guess_vector = num_player * 60 + 1
+        self.length_of_guess_vector = 61
         self.net = nn.Sequential(nn.Linear(10, 256),
                                  nn.ReLU(),
                                  nn.Linear(256, 1024),
@@ -82,18 +82,18 @@ class DQN_agent(AI):
             max_index = int(torch.argmax(guess_vector))
             if max_index == 60:
                 self.guess = [0, 0, False]
-            elif (max_index % 2 == 1 and not last_guess[2]) or (max_index % 12 // 2 + 1 == 1 and last_guess[0] != 1):
-                self.guess[2] = bool(max_index % 2)
-                self.guess[1] = int(max_index % 12 // 2) + 1
+            elif last_guess[0] == -1:
+                self.guess[0] = int(max_index // 12) + self.num_player
+            # last is fei, and now self decide to zhai or 1
+            elif (not last_guess[2] and last_guess[1] != 1) and (max_index % 2 == 1 or (max_index % 12 // 2) + 1 == 1):
                 self.guess[0] = int(max_index // 12) + last_guess[0] // 2
-            elif (max_index % 2 == 0 and last_guess[2]) or (max_index % 12 // 2 + 1 != 1 and last_guess[0] == 1):
-                self.guess[2] = bool(max_index % 2)
-                self.guess[1] = int(max_index % 12 // 2) + 1
+            # last is zhai or 1, and now self decide to fei
+            elif (last_guess[2] or last_guess[1] == 1) and (max_index % 2 == 0 and (max_index % 12 // 2) + 1 != 1):
                 self.guess[0] = int(max_index // 12) + last_guess[0] * 2
             else:
-                self.guess[2] = bool(max_index % 2)
-                self.guess[1] = int(max_index % 12 // 2) + 1
                 self.guess[0] = int(max_index // 12) + last_guess[0]
+            self.guess[2] = bool(max_index % 2)
+            self.guess[1] = int(max_index % 12 // 2) + 1
             self.decide_loss += abs(float(guess_vector[max_index])-int(self.reward_vector[max_index]))
             if self.need_output:
                 print('依据 DQN 计算出的 Q 值，', float(guess_vector[max_index]))
@@ -112,11 +112,17 @@ class DQN_agent(AI):
     def GetReward(self, last_guess, this_guess, reward, lr):
         if last_guess[0]+5 == this_guess[0]:
             max_index = 60
-        elif (this_guess[2] and not last_guess[2]) or (this_guess[1] == 1 and last_guess[1] != 1):
+        elif last_guess[0] == -1:
+            max_index = 12 * (this_guess[0] - self.num_player)
+            max_index = 2 * (this_guess[1] - 1) + max_index
+            max_index = int(this_guess[2]) + max_index
+        # last is fei, and now self decide to zhai or 1
+        elif (not last_guess[2] and last_guess[1] != 1) and (this_guess[1] == 1 or this_guess[2]):
             max_index = 12 * (this_guess[0] - last_guess[0] // 2)
             max_index = 2 * (this_guess[1] - 1) + max_index
             max_index = int(this_guess[2]) + max_index
-        elif (not this_guess[2] and last_guess[2]) or (this_guess[1] != 1 and last_guess[1] == 1):
+        # last is zhai or 1, and now self decide to fei
+        elif (last_guess[2] or last_guess[1] == 1) and (this_guess[1] != 1 and not this_guess[2]):
             max_index = 12 * (this_guess[0] - last_guess[0] * 2)
             max_index = 2 * (this_guess[1] - 1) + max_index
             max_index = int(this_guess[2]) + max_index
