@@ -298,7 +298,6 @@ def ergodic_train(targetAI, coachAI, lr, df, ge, max_epoch, max_player_num, need
         file.close()
         print('文件已读取')
     for e in range(load_guess[4], max_epoch):
-        print('e=', e)
         for player_number in range(load_guess[3], max_player_num+1):
             if e == load_guess[4] and player_number < load_guess[3]:
                 last_guess_dice_num = load_guess[1]
@@ -310,19 +309,36 @@ def ergodic_train(targetAI, coachAI, lr, df, ge, max_epoch, max_player_num, need
             player_list[0].epoch = e
             if isinstance(player_list[0], DQN_agent):
                 try:
-                    player_list[0].net.load_state_dict(torch.load('model/DQN/test.pth'))
-                    print('已读取model/DQN/test.pth')
+                    player_list[0].net = torch.load('model/DQN/test.pkl')
+                    print('已读取model/DQN/test.pkl')
                 except Exception:
-                    torch.save(player_list[0].net.state_dict(), 'model/DQN/test.pth')
+                    torch.save(player_list[0].net,  'model/DQN/test.pkl')
             last_guess = [load_guess[0], load_guess[1], load_guess[2]]
+            # ergodic previous coach's state
+            for init_guess_dice_num in range(player_number, player_number * 3):
+                for init_guess_dice_face in range(1, 7):
+                    for init_guess_zhai in range(2):
+                        # ergodic previous coach's dice
+                        for init_one_num in range(6):
+                            for init_two_num in range(6 - init_one_num):
+                                for init_three_num in range(6 - init_one_num - init_two_num):
+                                    for init_four_num in range(6 - init_one_num - init_two_num - init_three_num):
+                                        for init_five_num in range(
+                                                6 - init_one_num - init_two_num - init_three_num - init_four_num):
+                                            init_six_num = 5 - init_one_num - init_two_num - init_three_num \
+                                                           - init_four_num - init_five_num
+                                            # use coach to make a reasonable guess and dice for target AI
+                                            player_list[1].dice_dict = [init_one_num, init_two_num, init_three_num,
+                                                                        init_four_num, init_five_num, init_six_num]
+                                            last_guess = player_list[1].Decide
             for last_guess_dice_num in range(player_number, 5 * player_number + 1):
                 if e == load_guess[4] and player_number == load_guess[3] and last_guess_dice_num < load_guess[0]:
                     continue
                 if isinstance(player_list[0], DQN_agent):
-                    torch.save(player_list[0].net.state_dict(), 'model/DQN/test.pth')
-                    print('已保存到 model/DQN/test.pth')
+                    torch.save(player_list[0].net,  'model/DQN/test.pkl')
+                    print('已保存到 model/DQN/test.pkl')
                 if isinstance(player_list[1], DQN_agent):
-                    player_list[1].net.load_state_dict(torch.load('model/DQN/test.pth'))
+                    player_list[0].net = torch.load('model/DQN/test.pkl')
                     print('已更新训练数据集')
                 for last_guess_dice_face in range(1, 7):
                     for last_guess_zhai in range(2):
@@ -336,7 +352,8 @@ def ergodic_train(targetAI, coachAI, lr, df, ge, max_epoch, max_player_num, need
                         last_guess[0] = last_guess_dice_num
                         last_guess[1] = last_guess_dice_face
                         last_guess[2] = bool(last_guess_zhai)
-                        print('当前玩家数', player_number, '当前 last_guess =', last_guess)
+                        if need_debug_info:
+                            print('当前玩家数', player_number, '当前 last_guess =', last_guess)
                         # last guess is not legal, regenerate
                         if not judge_legal_guess([-1, 0, False], last_guess, player_number):
                             continue
@@ -354,10 +371,10 @@ def ergodic_train(targetAI, coachAI, lr, df, ge, max_epoch, max_player_num, need
                                             # ergodic targetAI's decide
                                             target_decide = [0, 0, False]
 
-                                            for target_guess_dice_num in range(5 * player_number + 1):
+                                            for target_guess_dice_num in range(6):
                                                 # target decide to open
-                                                if target_guess_dice_num == 0:
-                                                    target_decide[0] = 0
+                                                if target_guess_dice_num == 5:
+                                                    target_decide[0] = last_guess[0]+5
                                                     if need_debug_info:
                                                         print('target,选择开')
                                                     # open successful
@@ -373,9 +390,19 @@ def ergodic_train(targetAI, coachAI, lr, df, ge, max_epoch, max_player_num, need
                                                 else:
                                                     for target_guess_dice_face in range(1, 7):
                                                         for target_guess_zhai in range(2):
-                                                            target_decide[0] = target_guess_dice_num
-                                                            target_decide[1] = target_guess_dice_face
                                                             target_decide[2] = bool(target_guess_zhai)
+                                                            if (target_decide[2] and not last_guess[2]) \
+                                                                    or (target_guess_dice_face == 1 and last_guess[1] != 1):
+                                                                target_decide[0] = last_guess[0] // 2 \
+                                                                                   + target_guess_dice_num
+                                                            elif (not target_decide[2] and last_guess[2]) \
+                                                                    or (target_guess_dice_face != 1 and last_guess[1] == 1):
+                                                                target_decide[0] = 2 * last_guess[0] \
+                                                                                   + target_guess_dice_num
+                                                            else:
+                                                                target_decide[0] = target_guess_dice_num + last_guess[0]
+                                                            target_decide[1] = target_guess_dice_face
+
                                                             if need_debug_info:
                                                                 print('target 在', last_guess, '和骰子',
                                                                       player_list[0].dice_dict, '下选择', target_decide)
@@ -410,8 +437,8 @@ def ergodic_train(targetAI, coachAI, lr, df, ge, max_epoch, max_player_num, need
                 player_list[0].avg_loss = \
                     player_list[0].avg_loss / (player_list[0].update_time * player_list[0].length_of_guess_vector)
                 player_list[0].decide_loss = player_list[0].decide_loss / player_list[0].decide_try
-                print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())),
-                      f'epoch {player_list[0].epoch}，loss:', float(player_list[0].avg_loss),
+                print(time.strftime("\n%Y-%m-%d %H:%M:%S", time.localtime(time.time())),
+                      f'epoch {player_list[0].epoch}，玩家人数为',player_number, '上家数字为:', last_guess[0], '\nloss=', float(player_list[0].avg_loss),
                       '，平均误差为', player_list[0].decide_loss)
                 player_list[0].decide_loss = 0.0
                 player_list[0].decide_try = 0
