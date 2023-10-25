@@ -57,11 +57,12 @@ def play(targetAI, num_player, need_debug_info):
             while i < num_player:
                 # Don't need stuck is a normal game, so initialize the generator
                 # If player don't need stuck, it is either coach or a target AI finished it's stuck
-                temp_state = player_list[i].Decide(state, 0)
+                greedy = 0
+                temp_state = player_list[i].Decide(state, greedy)
                 while not judge_legal_guess(state, temp_state, num_player):
                     if need_debug_info:
                         print(temp_state, '不是一个合法猜测！')
-                    temp_state = player_list[i].Decide(state, 0)
+                    temp_state = player_list[i].Decide(state, greedy + 0.1)
                 # the new guess is an Open
                 if temp_state[0] == 0:
                     print(player_list[i].name, '开了！！')

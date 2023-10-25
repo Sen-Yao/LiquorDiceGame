@@ -306,6 +306,7 @@ def ergodic_sub_train(player_list, lr, ge, epoch, player_number, init_guess_dice
     while init_guess_dice_face < 7:
         if epoch == int(load_data[0]) and player_number == int(load_data[1]) and \
                 init_guess_dice_num == int(load_data[2]) and init_guess_dice_face == int(load_data[3]):
+            init_guess_zhai = 0
             if load_data[4] == 'True':
                 init_guess_zhai = 1
             if load_data[4] == 'False':
@@ -554,8 +555,7 @@ def ergodic_sub_train(player_list, lr, ge, epoch, player_number, init_guess_dice
                 torch.save(player_list[0].net, 'model/DQN/test.pkl')
                 print('\n\n\n\n已保存训练结果\n\n')
             if isinstance(player_list[1], DQN_agent):
-                player_list[1].net = torch.load('model/DQN/test.pkl')
-                player_list[1].net = player_list[1].net.to(device=try_gpu())
+                player_list[1].net = player_list[0].net
                 print('已更新训练数据集\n\n\n\n')
             init_guess_zhai += 1
         init_guess_dice_face += 1

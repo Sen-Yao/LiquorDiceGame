@@ -2,6 +2,7 @@ import torch
 from GameAI import AI
 import random
 
+
 class DumpAI(AI):
     """
     A dump AI, base on traditional algorithm to generate a response.
@@ -23,7 +24,6 @@ class DumpAI(AI):
         :return: An action list
         """
 
-
         # Find the most frequent face in the dice
         unique_values, counts = torch.unique(self.dice, return_counts=True)
 
@@ -44,7 +44,8 @@ class DumpAI(AI):
 
         last_player_num = input_list[0]
         last_player_face = input_list[1]
-
+        if self.need_output:
+            print('给到', self.name, '的输入是', input_list)
         # For the face guessed by the last player, the number of dice that AI have
         # Zhai or 1
         if last_player_face == 1 or input_list[2]:
@@ -165,4 +166,3 @@ class DumpAI(AI):
                         if self.need_output:
                             print(self.name, '玩家选择主动开！')
                         return [0, 0, False, self.name]  # Open
-

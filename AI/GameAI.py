@@ -1,12 +1,14 @@
 import torch
 import random
 
+
 class AI:
-    def __init__(self, num_player, need_output,  allow_stuck=True):
+    def __init__(self, num_player, need_output, allow_stuck=True):
         """
         Initialize the base information
 
         """
+        self.avg_loss = None
         self.net = None
         self.epoch = None
         self.name = 'AI'
@@ -49,25 +51,28 @@ class AI:
     def Decide(self, player_number, need_debug_info):
         pass
 
+    def GetReward(self, last_guess, this_guess, reward, lr):
+        pass
+
     def GreedyDecide(self, last_guess):
         if self.need_output:
             print('贪婪！')
         if last_guess[0] == -1:
-            self.guess = [random.randint(0, 6) + self.num_player, random.randint(1, 7), bool(random.randint(0, 1))]
+            self.guess = [random.randint(0, 6) + self.num_player, random.randint(1, 6), bool(random.randint(0, 1))]
         else:
             epsilon2 = random.random()
             if epsilon2 < 0.5:
                 if self.need_output:
-                    print(self.name, '玩家玩家选择开！')
+                    print(self.name, '玩家选择开！')
                 self.guess = [0, 0, False]
                 return self.guess
             else:
-                self.guess = [random.randint(0, 6) + last_guess[0], random.randint(1, 7), bool(random.randint(0, 1))]
+                self.guess = [random.randint(1, 6) + last_guess[0], random.randint(1, 6), bool(random.randint(0, 1))]
                 if self.guess[2]:
                     if self.need_output:
-                        print(self.name, '玩家玩家喊出', self.guess[0], '个', self.guess[1], '斋')
+                        print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1], '斋')
                     return self.guess
                 else:
                     if self.need_output:
-                        print(self.name, '玩家玩家喊出', self.guess[0], '个', self.guess[1])
+                        print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1])
                     return self.guess
