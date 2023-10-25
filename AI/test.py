@@ -14,4 +14,4 @@ Epoch = 1000000000
 
 # play(DQN_agent, 2, True)
 # ergodic_train(DQN_agent, DumpAI, 0.0001, 0, 1, 8, True)
-RandomTrain(DQN_agent, DQN_agent7, LearningRate, Greedy_Epsilon, 10000000, 2, False)
+RandomTrain(DQN_agent, DQN_agent, LearningRate, Greedy_Epsilon, 10000000, 2, False)
