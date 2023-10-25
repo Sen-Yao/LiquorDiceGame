@@ -23,26 +23,25 @@ def play(targetAI, num_player, need_debug_info):
     :param coachAI: The kind of AI that coach the targetAI
     :return: None
     """
-    player_list = []
-    player_list.append(Human(num_player, need_debug_info))
+    player_list = [Human(num_player, 0, need_debug_info)]
     player_list[0].name = 'player'
     for player in range(1, num_player):
-        player_list.append(targetAI(num_player, need_debug_info))
+        player_list.append(targetAI(num_player, 0, need_debug_info))
         player_list[player].player_id = player + 1
         player_list[player].name = str(player + 1)
 
-        if isinstance(player_list[0], QlearningAIOneLevel):
+        if isinstance(player_list[1], QlearningAIOneLevel):
             try:
-                player_list[0].Q_table = torch.load('model/QlearningOneLevel/num' + str(num_player) + '.pt')
+                player_list[1].Q_table = torch.load('model/QlearningOneLevel/num' + str(num_player) + '.pt')
                 print('已读取model/QlearningOneLevel/num' + str(num_player) + '.pth')
             except Exception:
-                torch.save(player_list[0].Q_table, 'model/QlearningOneLevel/num' + str(num_player) + '.pt')
-        if isinstance(player_list[0], DQN_agent):
+                torch.save(player_list[1].Q_table, 'model/QlearningOneLevel/num' + str(num_player) + '.pt')
+        if isinstance(player_list[1], DQN_agent):
             try:
-                player_list[0].net = torch.load('model/DQN/test.pkl')
+                player_list[1].net = torch.load('model/DQN/test.pkl')
                 print('已读取 model/DQN/test.pkl')
             except Exception:
-                torch.save(player_list[0].net, 'model/DQN/test.pkl')
+                torch.save(player_list[1].net, 'model/DQN/test.pkl')
 
     win = 0
     print('正在开始……')
@@ -62,6 +61,7 @@ def play(targetAI, num_player, need_debug_info):
                 while not judge_legal_guess(state, temp_state, num_player):
                     if need_debug_info:
                         print(temp_state, '不是一个合法猜测！')
+                    greedy += 0.1
                     temp_state = player_list[i].Decide(state, greedy + 0.1)
                 # the new guess is an Open
                 if temp_state[0] == 0:
@@ -89,8 +89,9 @@ def play(targetAI, num_player, need_debug_info):
                         print('大家的骰子为：')
                         for player in player_list:
                             print(player.name, player.dice.tolist())
-                            print('\n\n')
-                            time.sleep(2)
+                        print('\n\n')
+                        time.sleep(2)
+                        break
                 state = temp_state
                 if i == num_player - 1:
                     i = 0

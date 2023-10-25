@@ -13,9 +13,16 @@ def try_gpu(i=0):  #@save
     return torch.device('cpu')
 
 
+def max_mse_loss(output, target):
+    # 获取最大值的位置
+    max_index = torch.argmax(output)
+    # 计算预测的最大值与真实值的MSE
+    return torch.square(output[max_index] - target[max_index])
+
+
 class DQN_agent(AI):
-    def __init__(self, num_player, need_output=False):
-        super().__init__(num_player, need_output)
+    def __init__(self, num_player, learning_rate, need_output=False):
+        super().__init__(num_player, learning_rate, need_output)
         self.trainer = None
         self.length_of_guess_vector = 61
         self.net = nn.Sequential(nn.Linear(10, 256),
@@ -34,7 +41,7 @@ class DQN_agent(AI):
         self.epoch = 0
         self.last_epoch = self.epoch
         self.reward_vector = torch.zeros((61,), device=try_gpu())
-        self.learning_rate = 0.01
+        self.learning_rate = learning_rate
         self.name = 'DQN'
         self.guess = [-1, -1, False, self.name]
         self.need_stuck = False
@@ -59,6 +66,10 @@ class DQN_agent(AI):
         input_last_guess = torch.tensor(input_last_guess, dtype=torch.float,  device=try_gpu())
         expect_vector = self.net(input_last_guess)
         loss = self.loss_function(expect_vector, self.reward_vector)
+        if self.need_output:
+            print('reward_vector = \n', self.reward_vector.int().tolist(),
+                  '\nexpect_vector = \n', expect_vector.int().tolist(),
+                  '\nloss = ', int(loss) / 61)
         self.avg_loss += loss
         self.trainer.zero_grad()
         loss.backward()
@@ -132,7 +143,7 @@ class DQN_agent(AI):
                 max_index = 12 * (this_guess[0] - self.num_player)
                 max_index = 2 * (this_guess[1] - 1) + max_index
                 max_index = int(this_guess[2]) + max_index
-        elif last_guess[0]+5 == this_guess[0]:
+        elif this_guess[0] == 0:
             max_index = 60
         # last is fei, and now self decide to zhai or 1
         elif (not last_guess[2] and last_guess[1] != 1) and (this_guess[1] == 1 or this_guess[2]):

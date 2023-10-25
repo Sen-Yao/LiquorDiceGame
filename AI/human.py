@@ -7,11 +7,11 @@ class Human(AI):
     A dump AI, base on traditional algorithm to generate a response.
     """
 
-    def __init__(self, num_player, need_output=False):
+    def __init__(self, num_player, learning_rate, need_output=False):
         """
         Initialize the base information
         """
-        super().__init__(num_player, need_output)
+        super().__init__(num_player, learning_rate, need_output)
         self.name = '人类'
 
     def ShowDice(self):

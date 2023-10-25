@@ -8,11 +8,11 @@ class DumpAI(AI):
     A dump AI, base on traditional algorithm to generate a response.
     """
 
-    def __init__(self, num_player, need_output=False):
+    def __init__(self, num_player, learning_rate, need_output=False):
         """
         Initialize the base information
         """
-        super().__init__(num_player, need_output, False)
+        super().__init__(num_player, learning_rate, need_output, False)
 
     def ShowDice(self):
         if self.need_output:

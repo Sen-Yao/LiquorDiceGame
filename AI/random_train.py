@@ -2,6 +2,7 @@ import random
 import torch
 import time
 from GameAI import AI
+from Qlearning import QlearningAIOneLevel
 from DQN import DQN_agent, try_gpu
 from utils import judge_legal_guess, judge_open
 
@@ -10,7 +11,7 @@ ZHAI_FACTOR = 0.75
 
 
 def RandomTrain(targetAI, coachAI, learning_rate, greedy_epsilon, max_epoch, max_player_num, need_debug_info):
-    player_list = [targetAI(2, need_debug_info), coachAI(2, need_debug_info)]
+    player_list = [targetAI(2, learning_rate, need_debug_info), coachAI(2, need_debug_info)]
     player_list[0].name = 'Target'
     player_list[1].name = 'Coach'
     if isinstance(player_list[0], DQN_agent):
@@ -87,7 +88,6 @@ def RandomTrain(targetAI, coachAI, learning_rate, greedy_epsilon, max_epoch, max
             player_list[0].avg_loss = 0
 
 
-
 def Traverse_target_decide(target, coach, player_list, last_guess, learning_rate, greedy_epsilon, need_debug_info):
     """
     Traverse all possible decide for target AI, and generate reward factor
@@ -109,12 +109,13 @@ def Traverse_target_decide(target, coach, player_list, last_guess, learning_rate
                 if need_debug_info:
                     print('Target 开了初始值!')
                     target_decide[0] = 0
-                    target.GetReward(last_guess, target_decide, -100, learning_rate)
+                    target.GetReward(last_guess, target_decide, -99, learning_rate)
             else:
                 if need_debug_info:
                     print('Target 选择开')
-                if last_guess[0] == -1 or not judge_open(last_guess, len(player_list), player_list, need_debug_info):
-                    target.GetReward(last_guess, target_decide, -100, learning_rate)
+                target_decide[0] = 0
+                if not judge_open(last_guess, len(player_list), player_list, need_debug_info):
+                    target.GetReward(last_guess, target_decide, -99, learning_rate)
                 else:
                     target.GetReward(last_guess, target_decide, 30, learning_rate)
             break
@@ -140,7 +141,7 @@ def Traverse_target_decide(target, coach, player_list, last_guess, learning_rate
                 if not judge_legal_guess(last_guess, target_decide, len(player_list)):
                     if need_debug_info:
                         print('Target 做出了一个不合法的猜测')
-                    target.GetReward(last_guess, target_decide, -100, learning_rate)
+                    target.GetReward(last_guess, target_decide, -99, learning_rate)
                     continue
                 # Legal start for coachAI to decide open or not
                 else:
@@ -154,8 +155,8 @@ def Traverse_target_decide(target, coach, player_list, last_guess, learning_rate
                             target.GetReward(last_guess, target_decide, -50, learning_rate)
                         else:
                             target.GetReward(last_guess, target_decide, 30, learning_rate)
-                    else:
                     # Coach continue
+                    else:
                         target.GetReward(last_guess, target_decide, 20, learning_rate)
     # Just for Decide to generate the loss value
     target.Decide(last_guess, 0)
@@ -163,4 +164,5 @@ def Traverse_target_decide(target, coach, player_list, last_guess, learning_rate
     state_vector = [last_guess[0], last_guess[1], bool(last_guess[2])]
     for dice_face in range(6):
         state_vector.append(player_list[0].dice_dict[dice_face])
-    player_list[0].Update(state_vector)
+    if isinstance(player_list[0], DQN_agent):
+        player_list[0].Update(state_vector)

@@ -3,7 +3,7 @@ import random
 
 
 class AI:
-    def __init__(self, num_player, need_output, allow_stuck=True):
+    def __init__(self, num_player, learning_rate, need_output, allow_stuck=False):
         """
         Initialize the base information
 
@@ -12,6 +12,7 @@ class AI:
         self.net = None
         self.epoch = None
         self.name = 'AI'
+        self.learning_rate = learning_rate
         self.num_player = num_player
         self.dice = torch.randint(1, 7, (5,))
         self.dice = self.dice.sort()[0]
