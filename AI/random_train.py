@@ -6,8 +6,19 @@ from Qlearning import QlearningAIOneLevel
 from DQN import DQN_agent, try_gpu
 from utils import judge_legal_guess, judge_open
 
-START_FACTOR = 0.5
-ZHAI_FACTOR = 0.75
+START_FACTOR = 0
+ZHAI_FACTOR = 0.5
+RANDOM_OPEN_FACTOR = 0.5
+
+CONTINUE_REWARD = 25
+
+BE_OPEN_REWARD = 40
+BE_OPEN_PUNISH = -40
+
+SUCCESSFUL_OPEN_REWARD = 40
+UNSUCCESSFUL_OPEN_PUNISH = -50
+
+ILLEGAL_PUNISH = -100
 
 
 def RandomTrain(targetAI, coachAI, learning_rate, greedy_epsilon, max_epoch, max_player_num, need_debug_info):
@@ -24,7 +35,7 @@ def RandomTrain(targetAI, coachAI, learning_rate, greedy_epsilon, max_epoch, max
         except FileNotFoundError:
             torch.save(player_list[0].net, 'model/DQN/test.pkl')
     print('正在开始训练，请稍后...')
-    for epoch in range(max_epoch):
+    for epoch in range(max_epoch + 1):
         # Generate player's number
         player_num = random.randint(2, max_player_num)
         if need_debug_info:
@@ -48,21 +59,28 @@ def RandomTrain(targetAI, coachAI, learning_rate, greedy_epsilon, max_epoch, max
             # Make a reasonable but random guess for target to continue
             if init_random_factor < ZHAI_FACTOR:
                 # Init guess is Fei
-                init_guess = [random.randint(player_num, player_num + 3), random.randint(2, 6), False]
+                init_guess = [random.randint(player_num // 2, 3 * player_num), random.randint(2, 6), False]
                 if need_debug_info:
                     print('Init 为', init_guess)
             else:
                 # Init guess is Zhai
-                init_guess = [random.randint(player_num // 2, player_num // 2 + 3), random.randint(2, 6), True]
+                init_guess = [random.randint(player_num // 2, 2 * player_num), random.randint(2, 6), True]
                 if need_debug_info:
                     print('Init 为', init_guess)
             player_list[1].ShakeDice()
-
+            epsilon = greedy_epsilon
             last_guess = player_list[1].Decide(init_guess, greedy_epsilon)
-            while (not judge_legal_guess(init_guess, last_guess, player_num)) or last_guess[0] == 0:
+            while not judge_legal_guess(init_guess, last_guess, player_num):
                 if need_debug_info:
                     print('last player 做出了一个不合法的猜测', last_guess)
-                last_guess = player_list[1].Decide(init_guess, greedy_epsilon + 0.1)
+                epsilon += 0.1
+                last_guess = player_list[1].Decide(init_guess, epsilon)
+            if last_guess[0] == 0:
+                last_guess = [-1, 0, False]
+                if need_debug_info:
+                    print('last player 选择了开，强制将其设为', last_guess)
+            if need_debug_info:
+                print('last player 的点数为', player_list[1].dice)
             player_list[0].ShakeDice()
             Traverse_target_decide(player_list[0], player_list[1], player_list,
                                    last_guess, learning_rate, greedy_epsilon, need_debug_info)
@@ -102,6 +120,8 @@ def Traverse_target_decide(target, coach, player_list, last_guess, learning_rate
     :return:
     """
     target_decide = [0, 0, False]
+    # Just for Decide to generate the loss value
+    target.Decide(last_guess, 0)
     for target_guess_num in range(6):
         # target decide to open
         if target_guess_num == 5:
@@ -109,15 +129,15 @@ def Traverse_target_decide(target, coach, player_list, last_guess, learning_rate
                 if need_debug_info:
                     print('Target 开了初始值!')
                     target_decide[0] = 0
-                    target.GetReward(last_guess, target_decide, -99, learning_rate)
+                    target.GetReward(last_guess, target_decide, ILLEGAL_PUNISH, learning_rate)
             else:
                 if need_debug_info:
                     print('Target 选择开')
-                target_decide[0] = 0
-                if not judge_open(last_guess, len(player_list), player_list, need_debug_info):
-                    target.GetReward(last_guess, target_decide, -99, learning_rate)
+                target_decide = [0, 0, False]
+                if  judge_open(last_guess, len(player_list), player_list, need_debug_info):
+                    target.GetReward(last_guess, target_decide, SUCCESSFUL_OPEN_REWARD, learning_rate)
                 else:
-                    target.GetReward(last_guess, target_decide, 30, learning_rate)
+                    target.GetReward(last_guess, target_decide, UNSUCCESSFUL_OPEN_PUNISH, learning_rate)
             break
 
         # Target decide to continue
@@ -141,25 +161,34 @@ def Traverse_target_decide(target, coach, player_list, last_guess, learning_rate
                 if not judge_legal_guess(last_guess, target_decide, len(player_list)):
                     if need_debug_info:
                         print('Target 做出了一个不合法的猜测')
-                    target.GetReward(last_guess, target_decide, -99, learning_rate)
+                    target.GetReward(last_guess, target_decide, ILLEGAL_PUNISH, learning_rate)
                     continue
                 # Legal start for coachAI to decide open or not
                 else:
-                    coach_decide = coach.Decide(target_decide, greedy_epsilon)
-                    while not judge_legal_guess(target_decide, coach_decide, len(player_list)):
-                        coach_decide = coach.Decide(target_decide, greedy_epsilon + 0.1)
+                    random_open_factor = random.random()
+                    if random_open_factor < RANDOM_OPEN_FACTOR:
+                        if need_debug_info:
+                            print('下家选择随机开！')
+                        coach_decide = [0, 0, False]
+                    else:
+                        coach_decide = coach.Decide(target_decide, greedy_epsilon)
+                        while not judge_legal_guess(target_decide, coach_decide, len(player_list)):
+                            coach_decide = coach.Decide(target_decide, greedy_epsilon + 0.1)
 
                     # Coach open target
                     if coach_decide[0] == 0:
                         if judge_open(target_decide, len(player_list), player_list, need_debug_info):
-                            target.GetReward(last_guess, target_decide, -50, learning_rate)
+                            if need_debug_info:
+                                print('被开了且输了')
+                            target.GetReward(last_guess, target_decide, BE_OPEN_PUNISH, learning_rate)
                         else:
-                            target.GetReward(last_guess, target_decide, 30, learning_rate)
+                            if need_debug_info:
+                                print('骗开成功')
+                            target.GetReward(last_guess, target_decide, BE_OPEN_REWARD, learning_rate)
                     # Coach continue
                     else:
-                        target.GetReward(last_guess, target_decide, 20, learning_rate)
-    # Just for Decide to generate the loss value
-    target.Decide(last_guess, 0)
+                        target.GetReward(last_guess, target_decide, CONTINUE_REWARD, learning_rate)
+
     # Build state vector to update
     state_vector = [last_guess[0], last_guess[1], bool(last_guess[2])]
     for dice_face in range(6):

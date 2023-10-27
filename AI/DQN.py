@@ -31,6 +31,8 @@ class DQN_agent(AI):
                                  nn.ReLU(),
                                  nn.Linear(1024, 4096),
                                  nn.ReLU(),
+                                 nn.Linear(4096, 4096),
+                                 nn.ReLU(),
                                  nn.Linear(4096, 1024),
                                  nn.ReLU(),
                                  nn.Linear(1024, 256),
@@ -41,6 +43,7 @@ class DQN_agent(AI):
         self.epoch = 0
         self.last_epoch = self.epoch
         self.reward_vector = torch.zeros((61,), device=try_gpu())
+        self.guess_vector = torch.zeros((61,), device=try_gpu())
         self.learning_rate = learning_rate
         self.name = 'DQN'
         self.guess = [-1, -1, False, self.name]
@@ -50,6 +53,7 @@ class DQN_agent(AI):
         self.decide_try = 0
         self.update_time = 0
         self.trainer = torch.optim.Adam(self.net.parameters(), lr=self.learning_rate)
+
 
     def InitNet(self):
         # Initial net
@@ -100,8 +104,8 @@ class DQN_agent(AI):
                 state_vector[3 + i] = self.dice_dict[i]
             state_vector.append(self.num_player)
             state_vector = torch.tensor(state_vector, dtype=torch.float,  device=try_gpu())
-            guess_vector = self.net(state_vector)
-            max_index = int(torch.argmax(guess_vector))
+            self.guess_vector = self.net(state_vector)
+            max_index = int(torch.argmax(self.guess_vector))
             if max_index == 60:
                 self.guess = [0, 0, False]
             elif last_guess[0] == -1:
@@ -119,10 +123,11 @@ class DQN_agent(AI):
             # print(guess_vector, '\n',  self.reward_vector)
             # print('依据 DQN 计算出的 Q 值，', float(guess_vector[max_index]))
             # print('但实际上此处的 reward', int(self.reward_vector[max_index]))
-            self.decide_loss += abs(float(guess_vector[max_index])-int(self.reward_vector[max_index]))
+            self.decide_loss += abs(float(self.guess_vector[max_index])-int(self.reward_vector[max_index]))
             if self.need_output:
+                print(self.name, '此时的骰子为', self.dice)
                 print('Decide 函数发现 max_index 为', max_index)
-                print('依据 DQN 计算出的 Q 值，', float(guess_vector[max_index]))
+                print('依据 DQN 计算出的 Q 值，', float(self.guess_vector[max_index]))
                 print('但实际上此处的 reward', int(self.reward_vector[max_index]))
                 if self.guess[0] == 0:
                     print(self.guess[0], self.guess[1], self.guess[2])
@@ -161,5 +166,7 @@ class DQN_agent(AI):
             max_index = int(this_guess[2]) + max_index
         self.reward_vector[max_index] = reward
         if self.need_output:
-            print(last_guess, '下的决定', this_guess, '在 GetReward 函数中产生了对应的 max_index =', max_index, '产生了',  reward, '的反馈')
+            print('上个猜测为', last_guess, '而此时 Target 的骰子为', self.dice,
+                  '。它下的决定', this_guess, '在 GetReward 函数中对应的 max_index =', max_index,
+                  'Agent 预计它的 Q 值为', int(self.guess_vector[max_index]),  '但实际上产生了',  reward, '的反馈')
         self.learning_rate = lr

@@ -67,13 +67,13 @@ class AI:
                     print(self.name, '玩家选择开！')
                 self.guess = [0, 0, False]
                 return self.guess
+            elif 0.5 <= epsilon2 < 0.75:
+                self.guess = [random.randint(0, 2) + last_guess[0], random.randint(1, 6), True]
+                if self.need_output:
+                    print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1], '斋')
+                return self.guess
             else:
-                self.guess = [random.randint(1, 6) + last_guess[0], random.randint(1, 6), bool(random.randint(0, 1))]
-                if self.guess[2]:
-                    if self.need_output:
-                        print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1], '斋')
-                    return self.guess
-                else:
-                    if self.need_output:
-                        print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1])
-                    return self.guess
+                self.guess = [random.randint(0, 3) + last_guess[0], random.randint(1, 6), False]
+                if self.need_output:
+                    print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1])
+                return self.guess
