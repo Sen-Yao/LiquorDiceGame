@@ -14,6 +14,6 @@ Epoch = 1000000000
 
 # play(DQN_agent, 2, False)
 
-RandomTrain(DQN_agent, DumpAI, LearningRate, 0.1, 200000, 2, True)
+RandomTrain(DQN_agent, DumpAI, LearningRate, 0.1, 200000, 2, False)
 
-play(DQN_agent, 2, True)
+play(DQN_agent, 2, False)

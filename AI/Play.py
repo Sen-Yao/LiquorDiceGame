@@ -7,20 +7,16 @@ from utils import judge_legal_guess, judge_open
 import time
 
 
-def play(targetAI, num_player, need_debug_info):
+def play(targetAI, num_player, learning, training, need_debug_info):
     """
     train main program.
 
-    :param use_stuck:
-    :param is_game:
     :param targetAI: The kind of AI that need to be trained
     :param num_player: The number of player during training
+    :param learning:
+    :param training:
     :param need_debug_info: Whether you need output information for debug
-    :param lr: Learning Rate
-    :param df: Discount Factor
-    :param ge: Greedy Epsilon
-    :param epoch: Training Epoch
-    :param coachAI: The kind of AI that coach the targetAI
+
     :return: None
     """
     player_list = [Human(num_player, 0, need_debug_info)]
