@@ -3,21 +3,19 @@ from PyQt5.QtWidgets import (QLabel, QDialog, QPushButton, QApplication, QLineEd
 from PyQt5.QtWidgets import (QHBoxLayout, QVBoxLayout, QCheckBox,QMessageBox)
 from PyQt5.QtGui import QIcon,QIntValidator
 from PyQt5.QtCore import Qt
-import random
-import numpy as np
-from game import LiquorDiceGame
 
 
 class GUI(QWidget):
 
-    def __init__(self, players, current_player, is_action, all_dices, previous_guess, last_guess):
+    def __init__(self,players,all_dices,player_dice,current_player,last_guess,counts,results,is_action,previous_guess):
         super().__init__()
-        self.Lqgame = LiquorDiceGame()
+
         # 外面传入的在内部不变的变量
         self.players = players  # 所有玩家的序号列表
         self.current_player = current_player  # 玩家游戏序号,从服务器读取
         self.is_action = is_action  # 根据传入变量，判断现在是否轮到当前玩家
         self.all_dices = all_dices  # 所有玩家骰子结果汇总的长列表，通过服务器获得
+        self.results = results  # 该变量储存开出来的胜负结果
 
         # 从外边传入的在内部会发生变化的变量
         self.previous_guess = previous_guess  # previous_guess列表例子：[['7','4',True,'玩家1'],['7','5',False,'玩家2']]
@@ -25,18 +23,17 @@ class GUI(QWidget):
         self.game_continue = True  # 游戏是否继续，需要实时通信
 
         # 内部定义的不变的变量
-        self.player_dice = self.Lqgame.roll_dice()  # 当前玩家的骰子结果
-        self.counts = self.Lqgame.calculate_dices(all_dices)  # 所有玩家骰子点数个数的列表,每个数有几个
+        self.player_dice = player_dice  # 当前玩家的骰子结果
+        self.counts = counts  # 所有玩家骰子点数个数的列表,每个数有几个
 
         # 内部随着游戏进行变化的变量
-        self.results = None  # 该变量储存开出来的胜负结果
         self.user_input = None  # 储存用户的输入
         self.is_open = False  # 判断是否开
         self.is_jump_open = False  # 判断是否跳开
         self.is_guess = False  # 判断是否进行猜测
         self.is_use_one = False  # 判断是否喊一
 
-        # 初始化gui窗口
+
         self.initWindow()
 
     # 初始化主窗口           
@@ -102,8 +99,7 @@ class GUI(QWidget):
     # 该函数用于处理开
     def open_action(self):
         self.is_open = True
-        self.results = self.Lqgame.open_guess(self.previous_guess, self.counts)
-        self.show_results()  # 展示结果
+        self.show_results()
         
     # 该函数用于处理跳开
     def jump_open_action(self):
@@ -233,7 +229,7 @@ class Dialog(QDialog):
                         QMessageBox.warning(self, '错误', '输入不符合斋飞规则，请重新输入', QMessageBox.Ok)
                         self.text_input.clear() # 清空文本框 
 
-        guess[2] = guess_rule  # 导入猜测规则
+        guess[2] = bool(guess_rule)  # 把1或0转化为bool值，false代表飞猜，true代表斋猜
         guess.append(self.current_player)  # 把玩家信息加入列表中，以便标识谁做出的猜测
         self.previous_guess.append(guess)  # 做出正确猜测后将该猜测存入列表
         self.ok_button.setEnabled(True)
@@ -250,7 +246,5 @@ class Dialog(QDialog):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     # use to test
-    players = ['1', '2', '3', '4', '5', '6', '7']
-    ex = GUI(players, current_player='1', is_action=True, all_dices=[4,4,4,4,4,4],
-             previous_guess=[['7','4',1,'玩家1'], ['7','5',0,'玩家2']], last_guess=['7','5',0,'玩家2'])
+    ex = GUI(players=['1', '2', '3', '4', '5', '6', '7'],all_dices=[4,4,4,4,4,4],player_dice=[1,1,1,1,1,1],current_player=1,last_guess=[7,4,1],counts=[6,6,6,6,6,6],results=False,is_action=True,previous_guess=[['7','4',True,'玩家1']])
     sys.exit(app.exec_())
