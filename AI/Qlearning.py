@@ -14,11 +14,11 @@ class QlearningAIOneLevel(AI):
     consider the last input_guess to generate his response
     """
 
-    def __init__(self, num_player, learning_rate, need_output=False):
+    def __init__(self, num_player, need_output=False):
         """
         Initialize the base information
         """
-        super().__init__(num_player, learning_rate, need_output)
+        super().__init__(num_player, need_output)
         self.num_state = 12210 * self.num_player
         self.num_action = 14 * (5 * self.num_player + 1)
         self.Q_table = torch.zeros((5 * self.num_player + 2, 6, 2, 6, 6, 6, 6, 6, 5 * self.num_player + 1, 7, 2),
@@ -26,6 +26,8 @@ class QlearningAIOneLevel(AI):
         self.trainable = True
         self.name = 'Q'
         self.zero_detect = 0
+        self.allow_stuck = None
+        self.need_stuck = None
 
     def Update(self, last_guess, this_guess, reward, lr, is_game=False):
         # print(last_guess, this_guess)

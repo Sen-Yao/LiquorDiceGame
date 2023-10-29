@@ -3,20 +3,32 @@ from GameAI import AI
 import random
 
 
-class DumpAI(AI):
+class ClassicAI(AI):
     """
     A dump AI, base on traditional algorithm to generate a response.
     """
 
-    def __init__(self, num_player, learning_rate, need_output=False):
+    def __init__(self, num_player, need_output=False):
         """
         Initialize the base information
         """
-        super().__init__(num_player, learning_rate, need_output, False)
+        super().__init__(num_player, need_output)
+        self.second_dice = None
 
-    def ShowDice(self):
-        if self.need_output:
-            print(self.name, '玩家的骰子结果为', self.dice)
+    def ShakeDice(self):
+        self.dice_dict = [0, 0, 0, 0, 0, 0]
+        self.dice = torch.randint(1, 7, (5,))
+        self.dice = self.dice.sort()[0]
+        unique_values = torch.unique(self.dice)
+        # shake again
+        while len(unique_values) == 5:
+            self.dice = torch.randint(1, 7, (5,))
+            unique_values = torch.unique(self.dice)
+        self.second_dice = self.dice
+        for i in self.dice:
+            for j in range(6):
+                if i == j + 1:
+                    self.dice_dict[j] = self.dice_dict[j] + 1
 
     def Decide(self, input_list, greedy_epsilon):
         """
@@ -154,8 +166,8 @@ class DumpAI(AI):
                             print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1])
                         return self.guess
                     # Try change and Zhai
-                    if self.dice_dict[real_most_frequent_value_face - 1] + 5 * (self.num_player - 1) / 6 > input_list[
-                        0]:
+                    if self.dice_dict[real_most_frequent_value_face - 1] + \
+                            5 * (self.num_player - 1) / 6 > input_list[0]:
                         self.guess = [int(real_most_frequent_value_num + 5 * (self.num_player - 1) / 6),
                                       self.dice_dict[real_most_frequent_value_face - 1], True, self.name]
                         if self.need_output:

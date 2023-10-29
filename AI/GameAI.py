@@ -3,43 +3,39 @@ import random
 
 
 class AI:
-    def __init__(self, num_player, learning_rate, need_output, allow_stuck=False):
+    def __init__(self, num_player, need_output):
         """
         Initialize the base information
 
         """
-        self.avg_loss = None
-        self.net = None
-        self.epoch = None
+
+        self.dice = None
+        self.dice_dict = None
+        self.ShakeDice()
         self.name = 'AI'
-        self.learning_rate = learning_rate
         self.num_player = num_player
-        self.dice = torch.randint(1, 7, (5,))
-        self.dice = self.dice.sort()[0]
-        unique_values = torch.unique(self.dice)
-        # shake again
-        while len(unique_values) == 5:
-            self.dice = torch.randint(1, 7, (5,))
-            unique_values = torch.unique(self.dice)
-        self.second_dice = self.dice
         self.player_id = None
         self.guess = [-1, -1, False, self.name]
-        self.dice_dict = [0, 0, 0, 0, 0, 0]
         self.need_output = need_output
         self.trainable = False
-        self.need_stuck = False
-        self.allow_stuck = allow_stuck
+
+        # For DQN AI
+        self.net = None
+        self.decide_try = None
+        self.decide_loss = None
+        self.update_time = None
+        self.avg_loss = None
 
     def ShakeDice(self):
         self.dice_dict = [0, 0, 0, 0, 0, 0]
         self.dice = torch.randint(1, 7, (5,))
         self.dice = self.dice.sort()[0]
         unique_values = torch.unique(self.dice)
-        # shake again
+        # If Shunzi, Shake again
         while len(unique_values) == 5:
             self.dice = torch.randint(1, 7, (5,))
+            self.dice = self.dice.sort()[0]
             unique_values = torch.unique(self.dice)
-        self.second_dice = self.dice
         for i in self.dice:
             for j in range(6):
                 if i == j + 1:
@@ -59,21 +55,40 @@ class AI:
         if self.need_output:
             print('贪婪！')
         if last_guess[0] == -1:
-            self.guess = [random.randint(0, 6) + self.num_player, random.randint(1, 6), bool(random.randint(0, 1))]
+            self.guess = [random.randint(0, 4) + self.num_player, random.randint(1, 6), bool(random.randint(0, 1))]
+            if self.need_output:
+                if self.guess[2]:
+                    print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1], '斋')
+                else:
+                    print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1])
+            return self.guess
         else:
             epsilon2 = random.random()
+            epsilon3 = random.random()
             if epsilon2 < 0.5:
                 if self.need_output:
                     print(self.name, '玩家选择开！')
                 self.guess = [0, 0, False]
                 return self.guess
             elif 0.5 <= epsilon2 < 0.75:
-                self.guess = [random.randint(0, 2) + last_guess[0], random.randint(1, 6), True]
+                if last_guess[2] or last_guess[1] == 1:
+                    if epsilon3 < 0.75:
+                        self.guess = [random.randint(0, 4) + last_guess[0], random.randint(2, 6), True]
+                    else:
+                        self.guess = [random.randint(0, 4) + last_guess[0], 1, False]
+                else:
+                    if epsilon3 < 0.75:
+                        self.guess = [random.randint(0, 4) + last_guess[0] // 2, random.randint(2, 6), True]
+                    else:
+                        self.guess = [random.randint(0, 4) + last_guess[0] // 2, 1, False]
                 if self.need_output:
                     print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1], '斋')
                 return self.guess
             else:
-                self.guess = [random.randint(0, 3) + last_guess[0], random.randint(1, 6), False]
+                if last_guess[2] or last_guess[1] == 1:
+                    self.guess = [random.randint(0, 4) + 2 * last_guess[0], random.randint(2, 6), False]
+                else:
+                    self.guess = [random.randint(0, 4) + last_guess[0], random.randint(2, 6), False]
                 if self.need_output:
                     print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1])
                 return self.guess

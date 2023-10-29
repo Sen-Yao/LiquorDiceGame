@@ -4,19 +4,18 @@ import time
 
 class Human(AI):
     """
-    A dump AI, base on traditional algorithm to generate a response.
+    Human as a player for test AI's performance
     """
 
-    def __init__(self, num_player, learning_rate, need_output=False):
+    def __init__(self, num_player, need_output=False):
         """
         Initialize the base information
         """
-        super().__init__(num_player, learning_rate, need_output)
-        self.name = '人类'
+        super().__init__(num_player, need_output)
+        self.name = 'Player'
 
     def ShowDice(self):
-        if self.need_output or isinstance(self, Human):
-            print(self.name, '玩家的骰子结果为', self.dice)
+        print(self.name, '玩家的骰子结果为', self.dice)
 
     def Decide(self, input_list, ge):
         """

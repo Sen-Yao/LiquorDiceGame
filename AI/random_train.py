@@ -2,7 +2,6 @@ import random
 import torch
 import time
 from GameAI import AI
-from Qlearning import QlearningAIOneLevel
 from DQN import DQN_agent, try_gpu
 from utils import judge_legal_guess, judge_open
 
@@ -22,18 +21,20 @@ ILLEGAL_PUNISH = -100
 
 
 def RandomTrain(targetAI, coachAI, learning_rate, greedy_epsilon, max_epoch, max_player_num, need_debug_info):
-    player_list = [targetAI(2, learning_rate, need_debug_info), coachAI(2, need_debug_info)]
+    target = targetAI(2, need_debug_info)
+    coach = coachAI(2, need_debug_info)
+    player_list = [target, coach]
     player_list[0].name = 'Target'
     player_list[1].name = 'Coach'
     if isinstance(player_list[0], DQN_agent):
         try:
-            player_list[0].net = torch.load('model/DQN/test.pkl')
+            player_list[0].net = torch.load('model/DQN/DQN.pkl')
             player_list[0].net = player_list[0].net.to(device=try_gpu())
             if isinstance(player_list[1], DQN_agent):
                 player_list[1].net = player_list[0].net
-            print('成功读取 model/DQN/test.pkl')
+            print('成功读取 model/DQN/DQN.pkl')
         except FileNotFoundError:
-            torch.save(player_list[0].net, 'model/DQN/test.pkl')
+            torch.save(player_list[0].net, 'model/DQN/DQN.pkl')
     print('正在开始训练，请稍后...')
     for epoch in range(max_epoch + 1):
         # Generate player's number
@@ -86,7 +87,7 @@ def RandomTrain(targetAI, coachAI, learning_rate, greedy_epsilon, max_epoch, max
                                    last_guess, learning_rate, greedy_epsilon, need_debug_info)
         if epoch % 2000 == 0 and epoch != 0:
             if isinstance(player_list[0], DQN_agent):
-                torch.save(player_list[0].net, 'model/DQN/test.pkl')
+                torch.save(player_list[0].net, 'model/DQN/DQN.pkl')
                 print('\n\n\n\n已保存训练结果\n\n')
             if isinstance(player_list[1], DQN_agent):
                 player_list[1].net = player_list[0].net
@@ -94,10 +95,10 @@ def RandomTrain(targetAI, coachAI, learning_rate, greedy_epsilon, max_epoch, max
 
         if epoch % 200 == 0:
             player_list[0].avg_loss = player_list[0].avg_loss \
-                                      / (player_list[0].update_time * player_list[0].length_of_guess_vector)
+                                      / (player_list[0].update_time * 61)
             player_list[0].decide_loss = player_list[0].decide_loss / player_list[0].decide_try
             print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())),
-                  'epoch =', epoch,
+                  'max_epoch =', epoch,
                   'loss=', float(player_list[0].avg_loss),
                   '，平均决策误差为', player_list[0].decide_loss)
             player_list[0].update_time = 0
@@ -134,7 +135,7 @@ def Traverse_target_decide(target, coach, player_list, last_guess, learning_rate
                 if need_debug_info:
                     print('Target 选择开')
                 target_decide = [0, 0, False]
-                if  judge_open(last_guess, len(player_list), player_list, need_debug_info):
+                if judge_open(last_guess, len(player_list), player_list, need_debug_info):
                     target.GetReward(last_guess, target_decide, SUCCESSFUL_OPEN_REWARD, learning_rate)
                 else:
                     target.GetReward(last_guess, target_decide, UNSUCCESSFUL_OPEN_PUNISH, learning_rate)
