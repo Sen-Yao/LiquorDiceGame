@@ -157,11 +157,13 @@ class Server(QWidget):
         max_round = self.get_max_round()
         allow_zhai = self.ui.AllowZhai.isChecked()
         allow_jump = self.ui.AllowJump.isChecked()
+        max_player = self.get_max_player()
         
         self.start_fn(
             self.player_name,
             self.player_read_fn,
             self.player_write_fn,
+            max_player,
             max_round,
             allow_zhai,
             allow_jump,
@@ -173,6 +175,7 @@ def game_logic_example(
     player_name,
     player_read_fn,
     player_write_fn,
+    max_player_num,
     max_round,
     allow_zhai,
     allow_jump,
@@ -182,6 +185,7 @@ def game_logic_example(
     print('player name: ', player_name)
     print('player read fn: ', player_read_fn)
     print('player write fn: ', player_write_fn)
+    print('max player num: ', max_player_num)
     print('max round: ', max_round)
     print('allow zhai: ', allow_zhai)
     print('allow jump: ', allow_jump)
