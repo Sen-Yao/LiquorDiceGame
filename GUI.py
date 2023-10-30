@@ -5,6 +5,7 @@ from PyQt5.QtGui import QIcon,QIntValidator
 from PyQt5.QtCore import Qt
 
 
+
 class GUI(QWidget):
 
     def __init__(self,players,all_dices,player_dice,current_player,last_guess,counts,results,is_action,previous_guess):
