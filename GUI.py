@@ -1,14 +1,16 @@
 import sys,re
+import typing
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import (QLabel, QDialog, QPushButton, QApplication, QLineEdit, QWidget)
 from PyQt5.QtWidgets import (QHBoxLayout, QVBoxLayout, QCheckBox,QMessageBox)
 from PyQt5.QtGui import QIcon,QIntValidator
 from PyQt5.QtCore import Qt
-
+from web import libclient
 
 
 class GUI(QWidget):
 
-    def __init__(self,players,all_dices,player_dice,current_player,last_guess,counts,results,is_action,previous_guess):
+    def __init__(self,players,player_name,all_dices,player_dice,current_player,last_guess,counts,results,is_action,previous_guess):
         super().__init__()
 
         # 外面传入的在内部不变的变量
@@ -21,6 +23,7 @@ class GUI(QWidget):
         # 从外边传入的在内部会发生变化的变量
         self.previous_guess = previous_guess  # previous_guess列表例子：[['7','4',True,'玩家1'],['7','5',False,'玩家2']]
         self.last_guess = last_guess  # 上一个游戏玩家的猜测
+        self.player_name = player_name # 用户名输入
         self.game_continue = True  # 游戏是否继续，需要实时通信
 
         # 内部定义的不变的变量
@@ -28,7 +31,7 @@ class GUI(QWidget):
         self.counts = counts  # 所有玩家骰子点数个数的列表,每个数有几个
 
         # 内部随着游戏进行变化的变量
-        self.user_input = None  # 储存用户的输入
+        self.user_input = None  # 储存用户的猜测输入
         self.is_open = False  # 判断是否开
         self.is_jump_open = False  # 判断是否跳开
         self.is_guess = False  # 判断是否进行猜测
@@ -43,14 +46,21 @@ class GUI(QWidget):
         openButton = QPushButton("开")
         continueButton = QPushButton("继续猜测")
         jumpButton = QPushButton("跳开")
+        nameButton = QPushButton("输入用户名")
         # 未到当前玩家时开和猜测不能用
         openButton.setEnabled(False)
         continueButton.setEnabled(False)
 
-
+        if self.player_name is not None:
+            name_welcome_label = QLabel(str(self.player_name)+"，您好！\n")
         welcome_label = QLabel(
             "欢迎使用LiquorDiceGame！\n您是" + str(self.current_player) + "号玩家" "\n您的骰子结果为" + ','.join(
                 map(str, self.player_dice)) +"\n上一玩家猜测结果为" + ','.join(map(str, self.last_guess)), self)
+        
+        name_label=QLabel("\n请输入您的用户名：")
+        
+        
+
         no_action_label = QLabel("\n当前未到您的轮次，但您可以选择跳开")
         action_label=QLabel("\n当前轮到您的轮次，请从下面三个按钮中选择您要进行的操作")
         
@@ -61,7 +71,13 @@ class GUI(QWidget):
         hbox.addWidget(jumpButton)
 
         vbox = QVBoxLayout()
+        if self.player_name is not None:
+            vbox.addWidget(name_welcome_label)
         vbox.addWidget(welcome_label)
+        # 根据输入结果判断是否输入用户名
+        if self.player_name is None:
+            vbox.addWidget(name_label)
+            vbox.addWidget(nameButton)
         # 根据顺序判断添加操作
         if self.is_action is True:
             vbox.addWidget(action_label)
@@ -76,6 +92,7 @@ class GUI(QWidget):
         continueButton.clicked.connect(self.create_dialog)
         openButton.clicked.connect(self.open_action)
         jumpButton.clicked.connect(self.jump_open_action)
+        nameButton.clicked.connect(self.create_name)
 
         # 设置窗口风格 大小图标
         self.setGeometry(300, 300, 350, 250)
@@ -96,6 +113,18 @@ class GUI(QWidget):
             self.is_use_one=dialog.verify_use_one()
             print(f'用户是否喊一:{self.is_use_one}')
         print(self.user_input)
+
+    # 该函数用于创建用户名
+    def create_name(self):
+        name_dialog = Name_dialog()
+        result = name_dialog.exec_()  # 显示对话窗口并等待用户交互
+
+        if result == QDialog.Accepted and name_dialog.get_user_input is not None:
+            # 用户点击了对话窗口的“确定”按钮
+            self.player_name = name_dialog.get_user_input()
+            print(f'用户输入的文本是: {self.player_name}')
+        
+
 
     # 该函数用于处理开
     def open_action(self):
@@ -242,10 +271,40 @@ class Dialog(QDialog):
         else:
             self.is_use_one=False
         return self.is_use_one
+
+class Name_dialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.user_input = None  # 初始化一个属性来保存用户输入
+        self.init_name_Dialog()
     
+    def init_name_Dialog(self):
+        self.setWindowTitle('输入用户名')
+        self.setGeometry(200, 200, 300, 200)
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+
+        # 对话引导提示符
+        self.label = QLabel('输入你的用户名',self)
+        self.layout.addWidget(self.label)
+
+        # 文本编辑创立
+        self.text_input = QLineEdit(self)
+        self.layout.addWidget(self.text_input)
+
+        # 添加“输入文本确定”按钮
+        self.text_ok_button = QPushButton('确定输入', self)
+        self.text_ok_button.clicked.connect(self.accept)
+        self.layout.addWidget(self.text_ok_button)
+
+    # 判断并返回用户输入
+    def get_user_input(self):
+        return self.text_input.text()
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     # use to test
-    ex = GUI(players=['1', '2', '3', '4', '5', '6', '7'],all_dices=[4,4,4,4,4,4],player_dice=[1,1,1,1,1,1],current_player=1,last_guess=[7,4,1],counts=[6,6,6,6,6,6],results=False,is_action=True,previous_guess=[['7','4',True,'玩家1']])
+    # read_server_fn,write_server_fn = libclient.get_remote_fn(server_ip='127.0.0.1', server_port=12347)
+    ex = GUI(players=['1', '2', '3', '4', '5', '6', '7'],all_dices=[4,4,4,4,4,4],player_dice=[1,1,1,1,1,1],player_name=None,current_player=1,last_guess=[7,4,1],counts=[6,6,6,6,6,6],results=False,is_action=True,previous_guess=[['7','4',True,'玩家1']])
     sys.exit(app.exec_())
