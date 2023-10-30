@@ -4,6 +4,7 @@ import sys
 sys.path.append('web')
 from web import libserver
 import json
+from AI.DQN import DQN_agent
 
 
 class LiquorDiceGame:
@@ -117,6 +118,7 @@ def main_game(
     }
 
     lq_game = LiquorDiceGame()  # 实例化一个游戏逻辑类
+    test_AI = DQN_agent(len(player_name))
     # 游戏主循环
     for k in range(1, max_round+1):  # 10轮游戏
         # 广播初始消息
@@ -143,6 +145,10 @@ def main_game(
             current_player_id = lq_game.choose_player(previous_guess, players=player_name)
             current_player_name = player_name[current_player_id]
 
+            # if is AI:
+            #   AI_guess = test_AI.Decide([3, 6, 1])
+            #   AI_dict['num'] = AI_guess[0]
+
             # 发送Ask消息
             Ask_json = json.dumps(Ask)  # 将字典消息变为json字符串
             player_write_fn[current_player_id](Ask_json)  # 告诉某玩家到他的回合
@@ -153,6 +159,7 @@ def main_game(
 
             # 判断玩家选择继续猜测还是选择开
             if_continue_guess = decide['num']  # 不为0 代表继续猜测
+
 
             # 玩家选择继续猜测
             if if_continue_guess != 0:

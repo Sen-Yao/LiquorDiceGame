@@ -120,7 +120,7 @@ class DQN_agent(AI):
                   '。它下的决定', this_guess, '在 GetReward 函数中对应的 max_index =', action_index,
                   'Agent 预计它的 Q 值为', int(self.guess_vector[action_index]), '但实际上产生了', reward, '的反馈')
 
-    def Decide(self, last_guess, greedy_epsilon):
+    def Decide(self, last_guess, greedy_epsilon=0):
         self.decide_try += 1
         self.guess = [-1, -1, False, self.name]
         # Initial input vector
