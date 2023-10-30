@@ -6,94 +6,106 @@ from PyQt5.QtWidgets import (QHBoxLayout, QVBoxLayout, QCheckBox,QMessageBox)
 from PyQt5.QtGui import QIcon,QIntValidator
 from PyQt5.QtCore import Qt
 from web import libclient
+import json
 
 
 class GUI(QWidget):
 
-    def __init__(self,players,player_name,all_dices,player_dice,current_player,last_guess,counts,results,is_action,previous_guess):
+    def __init__(self,read_server_fn):
         super().__init__()
+        
+        self.read_server_fn = read_server_fn 
+        self.type= read_server_fn['type']
 
-        # 外面传入的在内部不变的变量
-        self.players = players  # 所有玩家的序号列表
-        self.current_player = current_player  # 玩家游戏序号,从服务器读取
-        self.is_action = is_action  # 根据传入变量，判断现在是否轮到当前玩家
-        self.all_dices = all_dices  # 所有玩家骰子结果汇总的长列表，通过服务器获得
-        self.results = results  # 该变量储存开出来的胜负结果
 
-        # 从外边传入的在内部会发生变化的变量
-        self.previous_guess = previous_guess  # previous_guess列表例子：[['7','4',True,'玩家1'],['7','5',False,'玩家2']]
-        self.last_guess = last_guess  # 上一个游戏玩家的猜测
-        self.player_name = player_name # 用户名输入
-        self.game_continue = True  # 游戏是否继续，需要实时通信
-
-        # 内部定义的不变的变量
-        self.player_dice = player_dice  # 当前玩家的骰子结果
-        self.counts = counts  # 所有玩家骰子点数个数的列表,每个数有几个
-
-        # 内部随着游戏进行变化的变量
-        self.user_input = None  # 储存用户的猜测输入
-        self.is_open = False  # 判断是否开
-        self.is_jump_open = False  # 判断是否跳开
-        self.is_guess = False  # 判断是否进行猜测
-        self.is_use_one = False  # 判断是否喊一
-
+        # 当传入的字典type为start_mesg
+        if self.type == 'start_mesg':
+            self.current_round = read_server_fn['current_round']
+            self.dice = read_server_fn['dice']
+            self.player_id = read_server_fn['player_id']
+            self.player_name = read_server_fn['player_name']
+        # 当传入的字典type为ask
+        elif self.type == 'ask':
+            self.is_your_round = 1
+        # 当传入的字典type为decide
+        elif self.type == 'decide':
+            self.num = None
+            self.face = None
+            self.zhai = None    # 分别储存用户具体猜测
+            self.user_input = None  # 储存用户的猜测输入
+            self.is_open = None  # 判断是否开
+            self.is_jump_open = None  # 判断是否跳开
+            self.is_guess = None  # 判断是否进行猜测
+            self.is_use_one = None  # 判断是否喊一   
+        # 当传入的字典type为s2c_decide
+        elif self.type == 's2c_decide':
+            self.player_id = read_server_fn['player_id'] # 广播用户id
+            self.player_name = read_server_fn['player_name'] # 广播用户name
+            self.num = read_server_fn['num'] # 广播用户猜测
+            self.face = read_server_fn['face']
+            self.zhai = read_server_fn['zhai']
+        # 当传入的字典type为end
+        elif self.type == 'end':
+            self.dices = read_server_fn['dice'] # 最终结果
+            self.names = read_server_fn['name'] # 最终玩家姓名
+            self.info = read_server_fn['info'] 
 
         self.initWindow()
 
     # 初始化主窗口           
     def initWindow(self):
-        # 创建三个按钮供用户选择三种游戏策略
+
+        if self.type == 'start_mesg':
+            if self.player_name is not None:
+                name_welcome_label = QLabel(str(self.player_name)+"，您好！\n")
+            else:
+                name_label=QLabel("\n请输入您的用户名：")
+                nameButton = QPushButton("输入用户名")
+                nameButton.clicked.connect(self.create_name)
+            
+            welcome_label = QLabel(
+            "欢迎使用LiquorDiceGame！\n,当前游戏轮次为第"+str(self.current_round)+",您是" + str(self.player_id) + "号玩家" "\n您的骰子结果为" + ','.join(
+                map(str, self.dice))+"\n当前未到您的轮次，请您耐心等待!" , self)
+        elif self.type == 's2c_decide':
+            broadcast_label = QLabel("现在"+str(self.player_id)+"号玩家"+str(self.player_name)+"的猜测结果是"+str(self.num)+str(self.face)+str(self.zhai)+"请您参考并等待进行下一步操作")
+        elif self.type == 'end':
+            end_label = QLabel("游戏结束，各玩家的结果为"+str(self.dices)+"\n参与本轮游戏的玩家为"+str(self.names))
+            end_info = QLabel(self.info)
+        # 创建按钮供用户选择两种游戏策略
         openButton = QPushButton("开")
         continueButton = QPushButton("继续猜测")
-        jumpButton = QPushButton("跳开")
-        nameButton = QPushButton("输入用户名")
-        # 未到当前玩家时开和猜测不能用
-        openButton.setEnabled(False)
-        continueButton.setEnabled(False)
-
-        if self.player_name is not None:
-            name_welcome_label = QLabel(str(self.player_name)+"，您好！\n")
-        welcome_label = QLabel(
-            "欢迎使用LiquorDiceGame！\n您是" + str(self.current_player) + "号玩家" "\n您的骰子结果为" + ','.join(
-                map(str, self.player_dice)) +"\n上一玩家猜测结果为" + ','.join(map(str, self.last_guess)), self)
-        
-        name_label=QLabel("\n请输入您的用户名：")
-        
-        
-
-        no_action_label = QLabel("\n当前未到您的轮次，但您可以选择跳开")
-        action_label=QLabel("\n当前轮到您的轮次，请从下面三个按钮中选择您要进行的操作")
+        action_label=QLabel("\n当前轮到您的轮次，请从下面两个按钮中选择您要进行的操作")
         
         # 对主界面进行盒布局
         hbox = QHBoxLayout()
-        hbox.addWidget(openButton)
-        hbox.addWidget(continueButton)
-        hbox.addWidget(jumpButton)
-
+        if self.type == 'decide':
+            hbox.addWidget(openButton)
+            hbox.addWidget(continueButton)
+            # 根据按钮的点击情况选择不同的函数处理
+            continueButton.clicked.connect(self.create_dialog)
+            openButton.clicked.connect(self.open_action)
         vbox = QVBoxLayout()
+
+        
+        if self.type == 'start_mesg' or self.type == 's2c_decide':
+            vbox.addWidget(welcome_label)
+        elif self.type == 's2c_decide':
+            vbox.addWidget(broadcast_label)
+        elif self.type == 'end':
+            vbox.addWidget(end_label)
+            vbox.addWidget(end_info)
+        elif self.type == 'decide':
+            vbox.addWidget(action_label)
+
         if self.player_name is not None:
             vbox.addWidget(name_welcome_label)
-        vbox.addWidget(welcome_label)
         # 根据输入结果判断是否输入用户名
         if self.player_name is None:
             vbox.addWidget(name_label)
             vbox.addWidget(nameButton)
-        # 根据顺序判断添加操作
-        if self.is_action is True:
-            vbox.addWidget(action_label)
-            openButton.setEnabled(True)
-            continueButton.setEnabled(True)
-        else:
-            vbox.addWidget(no_action_label)
+
         vbox.addLayout(hbox)
         self.setLayout(vbox)
-
-        # 根据按钮的点击情况选择不同的函数处理
-        continueButton.clicked.connect(self.create_dialog)
-        openButton.clicked.connect(self.open_action)
-        jumpButton.clicked.connect(self.jump_open_action)
-        nameButton.clicked.connect(self.create_name)
-
         # 设置窗口风格 大小图标
         self.setGeometry(300, 300, 350, 250)
         self.setWindowTitle('LiquorDiceGame')
@@ -102,17 +114,13 @@ class GUI(QWidget):
 
     # 该函数用于创建继续猜测的对话对象和读入用户输入
     def create_dialog(self):
-        self.is_guess = True
-        dialog = Dialog(self.previous_guess,self.current_player,self.last_guess)
+        dialog = Dialog(self.read_server_fn)
         result = dialog.exec_()  # 显示对话窗口并等待用户交互
 
         if result == QDialog.Accepted and dialog.get_user_input is not None:
             # 用户点击了对话窗口的“确定”按钮
-            self.user_input = dialog.get_user_input()
-            print(f'用户输入的文本是: {self.user_input}')
+            self.num,self.face,self.zhai = dialog.get_user_input()
             self.is_use_one=dialog.verify_use_one()
-            print(f'用户是否喊一:{self.is_use_one}')
-        print(self.user_input)
 
     # 该函数用于创建用户名
     def create_name(self):
@@ -122,20 +130,13 @@ class GUI(QWidget):
         if result == QDialog.Accepted and name_dialog.get_user_input is not None:
             # 用户点击了对话窗口的“确定”按钮
             self.player_name = name_dialog.get_user_input()
-            print(f'用户输入的文本是: {self.player_name}')
+            # print(f'用户输入的文本是: {self.player_name}')
         
-
-
     # 该函数用于处理开
     def open_action(self):
         self.is_open = True
         self.show_results()
         
-    # 该函数用于处理跳开
-    def jump_open_action(self):
-        self.is_jump_open = True
-        self.show_results()
-
     # 该函数用于展示结果
     def show_results(self):
         # 创建展示窗口
@@ -169,14 +170,16 @@ class GUI(QWidget):
 
 
 class Dialog(QDialog):
-    def __init__(self,previous_guess,current_player,last_guess):
+    def __init__(self,player_id):
         super().__init__()
 
-        self.user_input = None  # 初始化一个属性来保存用户输入
-        self.is_use_one = False # 初始化一个布尔型变量保存是否喊一
-        self.previous_guess=previous_guess # 记录过去所有玩家的猜测
-        self.current_player=current_player # 玩家游戏序号,从服务器读取
-        self.last_guess= last_guess# 上一游戏玩家的猜测
+        # 保存用户输入
+        self.num = None
+        self.face = None
+        self.zhai = None
+
+        self.is_use_one = None # 初始化一个布尔型变量保存是否喊一
+        self.player_id=player_id # 玩家游戏序号,从服务器读取
         self.initDialog()
         
     
@@ -188,7 +191,7 @@ class Dialog(QDialog):
         self.setLayout(self.layout)
 
         # 对话引导提示符
-        self.label = QLabel('输入你的猜测，以空格分隔(例如:7 4 1),最后一个数字0代表飞猜测，1代表斋猜测:\n上一个玩家的猜测为'+str(self.last_guess), self)
+        self.label = QLabel('输入你的猜测，以空格分隔(例如:7 4 1),最后一个数字0代表飞猜测，1代表斋猜测:',self)
         self.layout.addWidget(self.label)
 
         # 文本编辑创立
@@ -214,7 +217,13 @@ class Dialog(QDialog):
 
     # 判断并返回用户输入
     def get_user_input(self):
-        return self.text_input.text()
+        user_input = self.text_input.text()
+        guess=user_input.split()
+        # 将猜测值转化为整数（先前按照str格式保存）,同时检查输入的数字是否有效
+        guess_quantity = int(guess[0])
+        guess_value = int(guess[1])
+        guess_rule = int(guess[2])
+        return guess_quantity,guess_value,guess_rule
     
     # 验证用户文本输入
     def verify_input(self):
@@ -258,10 +267,6 @@ class Dialog(QDialog):
                     if guess_quantity <= last_guess_quantity and guess_value <= last_guess_value:
                         QMessageBox.warning(self, '错误', '输入不符合斋飞规则，请重新输入', QMessageBox.Ok)
                         self.text_input.clear() # 清空文本框 
-
-        guess[2] = bool(guess_rule)  # 把1或0转化为bool值，false代表飞猜，true代表斋猜
-        guess.append(self.current_player)  # 把玩家信息加入列表中，以便标识谁做出的猜测
-        self.previous_guess.append(guess)  # 做出正确猜测后将该猜测存入列表
         self.ok_button.setEnabled(True)
 
     #返回用户勾选
@@ -302,9 +307,40 @@ class Name_dialog(QDialog):
         return self.text_input.text()
 
 
+
+
+def main_client():
+    
+    while True:
+        # connect server
+        read_server_str,write_server_str = libclient.get_remote_fn(server_ip='127.0.0.1', server_port=12347)
+        # convert json's type to dict
+        read_server_fn,write_server_fn = json.loads(read_server_str),json.loads(write_server_str)
+        app = QApplication(sys.argv)
+        client=GUI(read_server_fn=read_server_fn)
+        
+        # 玩家继续猜测的输入，用于返回到服务器端
+        if read_server_fn['type'] == 'decide':
+            decide = {
+                'type': 'decide',
+                'num': client.num,  # 若为0则代表玩家选择开
+                'face': client.face,
+                'zhai': client.zhai
+            }
+            decide_mesg_json = json.dumps(decide)
+            write_server_str(decide_mesg_json)
+        elif read_server_fn['type'] == 'start_mesg':
+            start_mesg = {
+                'type': 'start_mesg',
+                'player_name': client.player_name
+            }
+            start_mesg_json = json.dumps(start_mesg)
+            write_server_str(start_mesg_json)
+            
+        sys.exit(app.exec_())
+
+
+
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    # use to test
-    # read_server_fn,write_server_fn = libclient.get_remote_fn(server_ip='127.0.0.1', server_port=12347)
-    ex = GUI(players=['1', '2', '3', '4', '5', '6', '7'],all_dices=[4,4,4,4,4,4],player_dice=[1,1,1,1,1,1],player_name=None,current_player=1,last_guess=[7,4,1],counts=[6,6,6,6,6,6],results=False,is_action=True,previous_guess=[['7','4',True,'玩家1']])
-    sys.exit(app.exec_())
+    main_client()
+    
