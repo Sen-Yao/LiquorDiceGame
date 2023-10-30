@@ -87,7 +87,7 @@ class GUI(QWidget):
         vbox = QVBoxLayout()
 
         
-        if self.type == 'start_mesg' or self.type == 's2c_decide':
+        if self.type == 'start_mesg' :
             vbox.addWidget(welcome_label)
         elif self.type == 's2c_decide':
             vbox.addWidget(broadcast_label)
@@ -97,12 +97,13 @@ class GUI(QWidget):
         elif self.type == 'decide':
             vbox.addWidget(action_label)
 
-        if self.player_name is not None:
-            vbox.addWidget(name_welcome_label)
-        # 根据输入结果判断是否输入用户名
-        if self.player_name is None:
-            vbox.addWidget(name_label)
-            vbox.addWidget(nameButton)
+        if self.type == 'start_mesg':
+            if self.player_name is not None:
+                vbox.addWidget(name_welcome_label)
+            # 根据输入结果判断是否输入用户名
+            if self.player_name is None:
+                vbox.addWidget(name_label)
+                vbox.addWidget(nameButton)
 
         vbox.addLayout(hbox)
         self.setLayout(vbox)
@@ -135,39 +136,7 @@ class GUI(QWidget):
     # 该函数用于处理开
     def open_action(self):
         self.is_open = True
-        self.show_results()
-        
-    # 该函数用于展示结果
-    def show_results(self):
-        # 创建展示窗口
-        show_window = QDialog()
-
-        # 展示结果标签
-        all_results_label = QLabel(self)
-        all_results_text = '最后各玩家的总结果为 '
-        for index, nums in enumerate(self.counts):
-            all_results_text += f'{nums}个{index+1} '
-        all_results_label.setText(all_results_text)
-
-        win_label=QLabel(self,text="你的开猜测为真！你赢得游戏！")
-        loss_label=QLabel(self,text="你的开猜测为假！你输掉游戏！")
-        # 对子窗口进行盒布局
-        hbox = QHBoxLayout()
-        hbox.addWidget(all_results_label)
-        vbox = QVBoxLayout()
-        vbox.addLayout(hbox)
-        if self.results is True:
-            vbox.addWidget(win_label)
-        else:
-            vbox.addWidget(loss_label)
-        show_window.setLayout(vbox)
-
-        # 设计窗口并显示
-        show_window.setWindowTitle('结果展示')
-        show_window.setGeometry(200, 200, 300, 200)
-        show_window.show()
-        show_window.exec_()
-
+        self.num = 0    
 
 class Dialog(QDialog):
     def __init__(self,player_id):
@@ -241,6 +210,7 @@ class Dialog(QDialog):
         guess_value = int(guess[1])
         guess_rule = int(guess[2])
 
+        # 需要提供previous_guess
         if self.previous_guess != []:  # 先前猜测不为空列表（本回合不是第一回合）
             last_guess = self.previous_guess[-1]  # 上一个玩家的猜测
             last_guess_quantity = int(last_guess[0])
@@ -310,6 +280,15 @@ class Name_dialog(QDialog):
 
 
 def main_client():
+
+
+    # # test code
+    # read_server_fn =  {
+    #     'type': 'end',
+    #     'dice': [[1,1,1,1,2],[1,1,1,1,1]],  # n*5的二维列表
+    #     'name': ['xia','zhi'],  # 1*n的一维列表
+    #     'info': 'yes'  # 判决的打印信息
+    # }
     
     while True:
         # connect server
@@ -336,7 +315,7 @@ def main_client():
             }
             start_mesg_json = json.dumps(start_mesg)
             write_server_str(start_mesg_json)
-            
+
         sys.exit(app.exec_())
 
 
