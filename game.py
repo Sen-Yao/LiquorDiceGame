@@ -166,6 +166,7 @@ def main_game(
             for i in range(1, ai_num+1):
                 if current_player_id == player_id[-i]:  # 当前玩家id在最后ai_num位代表是ai玩家
                     if_is_AI = 1
+                    break
                 else:
                     if_is_AI = 0
 
