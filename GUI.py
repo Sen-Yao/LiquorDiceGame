@@ -299,17 +299,20 @@ def main_client():
     #     'last_guess_zhai':1
 
     # }
+    # 用于判断是否需要建立连接
     begin_connect = True
     
     while True:
 
         app = QApplication(sys.argv)
         # create name to client
+        read_server,write_server = libclient.get_remote_fn(server_ip='127.0.0.1', server_port=12347)
         if begin_connect is True:
             player_name = create_name()
+            write_server(player_name)
             begin_connect = False
-        # connect server
-        read_server_str,write_server_str = libclient.get_remote_fn(server_ip='127.0.0.1', server_port=12347)
+        # read frpm server
+        read_server_str = read_server()
         # # convert json's type to dict
         read_server_fn = json.loads(read_server_str)
         
@@ -324,7 +327,7 @@ def main_client():
                 'zhai': client.zhai
             }
             decide_mesg_json = json.dumps(decide)
-            write_server_str(decide_mesg_json)
+            write_server(decide_mesg_json)
 
         sys.exit(app.exec_())
 
