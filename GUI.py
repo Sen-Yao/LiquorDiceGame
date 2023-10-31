@@ -299,16 +299,19 @@ def main_client():
     #     'last_guess_zhai':1
 
     # }
+    begin_connect = True
     
     while True:
 
         app = QApplication(sys.argv)
         # create name to client
-        player_name=create_name()
+        if begin_connect is True:
+            player_name = create_name()
+            begin_connect = False
         # connect server
         read_server_str,write_server_str = libclient.get_remote_fn(server_ip='127.0.0.1', server_port=12347)
         # # convert json's type to dict
-        read_server_fn,write_server_fn = json.loads(read_server_str),json.loads(write_server_str)
+        read_server_fn = json.loads(read_server_str)
         
         client=GUI(read_server_fn=read_server_fn)
         
