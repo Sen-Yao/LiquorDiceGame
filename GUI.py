@@ -61,12 +61,7 @@ class GUI(QWidget):
     def initWindow(self):
 
         if self.type == 'start_mesg':
-            if self.player_name is not None:
-                name_welcome_label = QLabel(str(self.player_name)+"，您好！\n")
-            else:
-                name_label=QLabel("\n请输入您的用户名：")
-                nameButton = QPushButton("输入用户名")
-                nameButton.clicked.connect(self.create_name)
+            name_welcome_label = QLabel(str(self.player_name)+"，您好！\n")
             
             welcome_label = QLabel(
             "欢迎使用LiquorDiceGame！\n,当前游戏轮次为第"+str(self.current_round)+",您是" + str(self.player_id) + "号玩家" "\n您的骰子结果为" + ','.join(
@@ -103,13 +98,7 @@ class GUI(QWidget):
             vbox.addWidget(action_label)
 
         if self.type == 'start_mesg':
-            if self.player_name is not None:
-                vbox.addWidget(name_welcome_label)
-            # 根据输入结果判断是否输入用户名
-            if self.player_name is None:
-                vbox.addWidget(name_label)
-                vbox.addWidget(nameButton)
-
+            vbox.addWidget(name_welcome_label)
         vbox.addLayout(hbox)
         self.setLayout(vbox)
         # 设置窗口风格 大小图标
@@ -128,15 +117,6 @@ class GUI(QWidget):
             self.num,self.face,self.zhai = dialog.get_user_input()
             self.is_use_one=dialog.verify_use_one()
 
-    # 该函数用于创建用户名
-    def create_name(self):
-        name_dialog = Name_dialog()
-        result = name_dialog.exec_()  # 显示对话窗口并等待用户交互
-
-        if result == QDialog.Accepted and name_dialog.get_user_input is not None:
-            # 用户点击了对话窗口的“确定”按钮
-            self.player_name = name_dialog.get_user_input()
-            # print(f'用户输入的文本是: {self.player_name}')
         
     # 该函数用于处理开
     def open_action(self):
@@ -297,49 +277,51 @@ class Name_dialog(QDialog):
         return self.text_input.text()
 
 
+# 该函数用于创建用户名
+def create_name():
+    name_dialog = Name_dialog()
+    result = name_dialog.exec_()  # 显示对话窗口并等待用户交互
 
+    if result == QDialog.Accepted and name_dialog.get_user_input is not None:
+        # 用户点击了对话窗口的“确定”按钮
+        player_name = name_dialog.get_user_input()
+        # print(f'用户输入的文本是: {self.player_name}')
+        return player_name
 
 def main_client():
 
+    # # test code
+    # read_server_fn =   {
+    #     'type': 'Ask',
+    #     'is_your_round': 1,
+    #     'last_guess_num': 7,
+    #     'last_guess_face':4,
+    #     'last_guess_zhai':1
 
-    # test code
-    read_server_fn =   {
-        'type': 'Ask',
-        'is_your_round': 1,
-        'last_guess_num': 7,
-        'last_guess_face':4,
-        'last_guess_zhai':1
-
-    }
+    # }
     
     while True:
 
         app = QApplication(sys.argv)
         # create name to client
+        player_name=create_name()
         # connect server
-        # read_server_str,write_server_str = libclient.get_remote_fn(server_ip='127.0.0.1', server_port=12347)
+        read_server_str,write_server_str = libclient.get_remote_fn(server_ip='127.0.0.1', server_port=12347)
         # # convert json's type to dict
-        # read_server_fn,write_server_fn = json.loads(read_server_str),json.loads(write_server_str)
+        read_server_fn,write_server_fn = json.loads(read_server_str),json.loads(write_server_str)
         
         client=GUI(read_server_fn=read_server_fn)
         
-        # # 玩家继续猜测的输入，用于返回到服务器端
-        # if read_server_fn['type'] == 'Ask':
-        #     decide = {
-        #         'type': 'decide',
-        #         'num': client.num,  # 若为0则代表玩家选择开
-        #         'face': client.face,
-        #         'zhai': client.zhai
-        #     }
-        #     decide_mesg_json = json.dumps(decide)
-        #     write_server_str(decide_mesg_json)
-        # elif read_server_fn['type'] == 'start_mesg':
-        #     start_mesg = {
-        #         'type': 'start_mesg',
-        #         'player_name': client.player_name
-        #     }
-        #     start_mesg_json = json.dumps(start_mesg)
-        #     write_server_str(start_mesg_json)
+        # 玩家继续猜测的输入，用于返回到服务器端
+        if read_server_fn['type'] == 'Ask':
+            decide = {
+                'type': 'decide',
+                'num': client.num,  # 若为0则代表玩家选择开
+                'face': client.face,
+                'zhai': client.zhai
+            }
+            decide_mesg_json = json.dumps(decide)
+            write_server_str(decide_mesg_json)
 
         sys.exit(app.exec_())
 
