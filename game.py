@@ -139,7 +139,7 @@ def main_game(
         for j in range(0, player_num):
             # 初始通信start的消息
             start_mesg['current_round'] = k  # 当前第几轮游戏
-            start_mesg['dice'] = lq_game.roll_dice  # 玩家骰子结果
+            start_mesg['dice'] = lq_game.roll_dice()  # 玩家骰子结果
             start_mesg['player_id'] = j  # 玩家序号
             start_mesg['player_name'] = player_name[j]  # 玩家名字
 
@@ -225,7 +225,7 @@ def main_game(
             # 真人玩家
             else:
                 # 发送Ask消息
-                if previous_guess is not None:
+                if len(previous_guess) !=0:
                     Ask['last_guess_num'] = previous_guess[-1][0]
                     Ask['last_guess_face'] = previous_guess[-1][1]
                     Ask['last_guess_zhai'] = previous_guess[-1][2]
@@ -279,7 +279,6 @@ def main_game(
                     for j in range(0, player_num):
                         player_write_fn[j](end_json)
                     break
-
 
 if __name__ == '__main__':
     libserver.start_server(main_game, '127.0.0.1', 12347)

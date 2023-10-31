@@ -312,7 +312,10 @@ def main_client():
             write_server(player_name)
             begin_connect = False
         # read frpm server
+        success_connect_str = read_server()
+        print(success_connect_str)
         read_server_str = read_server()
+        print(read_server_str)
         # # convert json's type to dict
         read_server_fn = json.loads(read_server_str)
         
