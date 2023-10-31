@@ -31,6 +31,8 @@ class QlearningAIOneLevel(AI):
 
     def Update(self, last_guess, this_guess, reward, lr, is_game=False):
         # print(last_guess, this_guess)
+        if this_guess[0] > self.num_player:
+            return False
         Q_value = float(self.Q_table[last_guess[0] + 1][last_guess[1] - 1][int(last_guess[2])][
                             self.dice[0] - 1][self.dice[1] - 1][self.dice[2] - 1][self.dice[3] - 1][self.dice[4] - 1][
                             this_guess[0]][this_guess[1]][int(this_guess[2])])

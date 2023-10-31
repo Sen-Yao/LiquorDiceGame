@@ -89,7 +89,7 @@ def train(targetAI, coachAI, learning_rate, greedy_epsilon, max_epoch, num_playe
     print('正在开始……')
     for e in range(max_epoch):
 
-        coach_list = [ClassicAI, QlearningAIOneLevel, DQN_agent]
+        coach_list = [ClassicAI, DQN_agent]
 
         player_list = [targetAI(num_player, need_debug_info)]
         load_target(player_list[0], num_player, False)

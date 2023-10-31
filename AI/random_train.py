@@ -2,6 +2,7 @@ import random
 import torch
 import time
 from GameAI import AI
+from Qlearning import QlearningAIOneLevel
 from DQN import DQN_agent, try_gpu
 from utils import judge_legal_guess, judge_open
 
@@ -9,15 +10,53 @@ START_FACTOR = 0
 ZHAI_FACTOR = 0.5
 RANDOM_OPEN_FACTOR = 0.5
 
-CONTINUE_REWARD = 25
+CONTINUE_REWARD = 35
 
 BE_OPEN_REWARD = 40
 BE_OPEN_PUNISH = -40
 
-SUCCESSFUL_OPEN_REWARD = 40
-UNSUCCESSFUL_OPEN_PUNISH = -55
+SUCCESSFUL_OPEN_REWARD = 50
+UNSUCCESSFUL_OPEN_PUNISH = -50
 
 ILLEGAL_PUNISH = -100
+
+
+def output_train_info(target, epoch, last_output_time, last_output_epoch):
+    if time.time() - last_output_time > 5:
+        if isinstance(target, QlearningAIOneLevel):
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), 'epoch=', epoch,
+                  '训练速度为', (epoch - last_output_epoch) / 5, 'epoch / s')
+            target.zero_detect = 0
+        if isinstance(target, DQN_agent):
+            target.avg_loss = target.avg_loss / (target.update_time * 61)
+            target.decide_loss = target.decide_loss / target.decide_try
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), 'epoch=', epoch,
+                  '训练速度为', (epoch - last_output_epoch) / 5, 'epoch / s',
+                  'loss=', float(target.avg_loss),
+                  '，平均决策误差为', target.decide_loss)
+            target.update_time = 0
+            target.decide_loss = 0.0
+            target.decide_try = 0
+            target.avg_loss = 0
+        return True
+    else:
+        return False
+
+
+def save_and_update_target(target, coach, num_player, last_save_time):
+    if time.time() - last_save_time > 60:
+        if isinstance(target, QlearningAIOneLevel):
+            torch.save(target.Q_table, 'model/QlearningOneLevel/num' + str(num_player) + '.pt')
+            print('已保存')
+        if isinstance(target, DQN_agent):
+            torch.save(target.net, 'model/DQN/DQN.pkl')
+            print('已保存')
+        if isinstance(coach, DQN_agent):
+            coach.net = target.net
+            print('已更新训练数据集')
+        return True
+    else:
+        return False
 
 
 def RandomTrain(targetAI, coachAI, learning_rate, greedy_epsilon, max_epoch, max_player_num, need_debug_info):
@@ -26,6 +65,9 @@ def RandomTrain(targetAI, coachAI, learning_rate, greedy_epsilon, max_epoch, max
     player_list = [target, coach]
     player_list[0].name = 'Target'
     player_list[1].name = 'Coach'
+    last_output_time = time.time()
+    last_save_time = time.time()
+    last_output_epoch = 0
     if isinstance(player_list[0], DQN_agent):
         try:
             player_list[0].net = torch.load('model/DQN/DQN.pkl')
@@ -85,26 +127,13 @@ def RandomTrain(targetAI, coachAI, learning_rate, greedy_epsilon, max_epoch, max
             player_list[0].ShakeDice()
             Traverse_target_decide(player_list[0], player_list[1], player_list,
                                    last_guess, learning_rate, greedy_epsilon, need_debug_info)
-        if epoch % 2000 == 0 and epoch != 0:
-            if isinstance(player_list[0], DQN_agent):
-                torch.save(player_list[0].net, 'model/DQN/DQN.pkl')
-                print('\n\n\n\n已保存训练结果\n\n')
-            if isinstance(player_list[1], DQN_agent):
-                player_list[1].net = player_list[0].net
-                print('已更新训练数据集\n\n\n\n')
 
-        if epoch % 200 == 0:
-            player_list[0].avg_loss = player_list[0].avg_loss \
-                                      / (player_list[0].update_time * 61)
-            player_list[0].decide_loss = player_list[0].decide_loss / player_list[0].decide_try
-            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())),
-                  'max_epoch =', epoch,
-                  'loss=', float(player_list[0].avg_loss),
-                  '，平均决策误差为', player_list[0].decide_loss)
-            player_list[0].update_time = 0
-            player_list[0].decide_loss = 0.0
-            player_list[0].decide_try = 0
-            player_list[0].avg_loss = 0
+        if output_train_info(player_list[0], epoch, last_output_time, last_output_epoch):
+            last_output_time = time.time()
+            last_output_epoch = epoch
+
+        if save_and_update_target(player_list[0], player_list[1], player_num, last_save_time):
+            last_save_time = time.time()
 
 
 def Traverse_target_decide(target, coach, player_list, last_guess, learning_rate, greedy_epsilon, need_debug_info):
