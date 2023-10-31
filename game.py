@@ -97,7 +97,11 @@ def main_game(
     # 服务器告知为某一玩家的回合
     Ask = {
         'type': 'Ask',
-        'is_your_round': 1
+        'is_your_round': 1,
+        'last_guess_num': 7,
+        'last_guess_face':4,
+        'last_guess_zhai':1
+
     }
     # 玩家继续猜测的输入
     decide = {
@@ -221,6 +225,14 @@ def main_game(
             # 真人玩家
             else:
                 # 发送Ask消息
+                if previous_guess is not None:
+                    Ask['last_guess_num'] = previous_guess[-1][0]
+                    Ask['last_guess_face'] = previous_guess[-1][1]
+                    Ask['last_guess_zhai'] = previous_guess[-1][2]
+                else:
+                    Ask['last_guess_num'] = -1
+                    Ask['last_guess_face'] = -1
+                    Ask['last_guess_zhai'] = -1
                 Ask_json = json.dumps(Ask)  # 将字典消息变为json字符串
                 player_write_fn[current_player_id](Ask_json)  # 告诉某玩家到他的回合
 

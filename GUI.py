@@ -25,18 +25,22 @@ class GUI(QWidget):
             self.player_id = read_server_fn['player_id']
             self.player_name = read_server_fn['player_name']
         # 当传入的字典type为ask
-        elif self.type == 'ask':
+        elif self.type == 'Ask':
             self.is_your_round = 1
-        # 当传入的字典type为decide
-        elif self.type == 'decide':
             self.num = None
             self.face = None
             self.zhai = None    # 分别储存用户具体猜测
+            # 储存上一个用户的猜测
+            self.last_num = read_server_fn['last_guess_num']
+            self.last_face = read_server_fn['last_guess_face']
+            self.last_zhai = read_server_fn['last_guess_zhai']
+
             self.user_input = None  # 储存用户的猜测输入
             self.is_open = None  # 判断是否开
             self.is_jump_open = None  # 判断是否跳开
             self.is_guess = None  # 判断是否进行猜测
-            self.is_use_one = None  # 判断是否喊一   
+            self.is_use_one = None  # 判断是否喊一 
+              
         # 当传入的字典type为s2c_decide
         elif self.type == 's2c_decide':
             self.player_id = read_server_fn['player_id'] # 广播用户id
@@ -44,6 +48,7 @@ class GUI(QWidget):
             self.num = read_server_fn['num'] # 广播用户猜测
             self.face = read_server_fn['face']
             self.zhai = read_server_fn['zhai']
+            
         # 当传入的字典type为end
         elif self.type == 'end':
             self.dices = read_server_fn['dice'] # 最终结果
@@ -78,7 +83,7 @@ class GUI(QWidget):
         
         # 对主界面进行盒布局
         hbox = QHBoxLayout()
-        if self.type == 'decide':
+        if self.type == 'Ask':
             hbox.addWidget(openButton)
             hbox.addWidget(continueButton)
             # 根据按钮的点击情况选择不同的函数处理
@@ -94,7 +99,7 @@ class GUI(QWidget):
         elif self.type == 'end':
             vbox.addWidget(end_label)
             vbox.addWidget(end_info)
-        elif self.type == 'decide':
+        elif self.type == 'Ask':
             vbox.addWidget(action_label)
 
         if self.type == 'start_mesg':
@@ -115,7 +120,7 @@ class GUI(QWidget):
 
     # 该函数用于创建继续猜测的对话对象和读入用户输入
     def create_dialog(self):
-        dialog = Dialog(self.read_server_fn)
+        dialog = Dialog(self.last_num,self.last_face,self.last_zhai)
         result = dialog.exec_()  # 显示对话窗口并等待用户交互
 
         if result == QDialog.Accepted and dialog.get_user_input is not None:
@@ -139,7 +144,7 @@ class GUI(QWidget):
         self.num = 0    
 
 class Dialog(QDialog):
-    def __init__(self,player_id):
+    def __init__(self,last_num,last_face,last_zhai):
         super().__init__()
 
         # 保存用户输入
@@ -147,8 +152,12 @@ class Dialog(QDialog):
         self.face = None
         self.zhai = None
 
+        # 上一个玩家猜测结果
+        self.last_num = last_num
+        self.last_face = last_face
+        self.last_zhai = last_zhai
+
         self.is_use_one = None # 初始化一个布尔型变量保存是否喊一
-        self.player_id=player_id # 玩家游戏序号,从服务器读取
         self.initDialog()
         
     
@@ -160,8 +169,12 @@ class Dialog(QDialog):
         self.setLayout(self.layout)
 
         # 对话引导提示符
-        self.label = QLabel('输入你的猜测，以空格分隔(例如:7 4 1),最后一个数字0代表飞猜测，1代表斋猜测:',self)
-        self.layout.addWidget(self.label)
+        if self.last_num == -1:
+            self.first_label = QLabel('你是第一个玩家,请输入你的猜测，以空格分隔(例如:7 4 1),最后一个数字0代表飞猜测，1代表斋猜测')
+            self.layout.addWidget(self.first_label)
+        else:
+            self.then_label = QLabel('输入你的猜测，以空格分隔(例如:7 4 1),最后一个数字0代表飞猜测，1代表斋猜测:\n上一个玩家的猜测为：'+str(self.last_num)+' '+str(self.last_face)+' '+str(self.last_zhai),self)
+            self.layout.addWidget(self.then_label)
 
         # 文本编辑创立
         self.text_input = QLineEdit(self)
@@ -210,12 +223,13 @@ class Dialog(QDialog):
         guess_value = int(guess[1])
         guess_rule = int(guess[2])
 
+        # 用于判断输入是否正确
+        ok_flag = True
         # 需要提供previous_guess
-        if self.previous_guess != []:  # 先前猜测不为空列表（本回合不是第一回合）
-            last_guess = self.previous_guess[-1]  # 上一个玩家的猜测
-            last_guess_quantity = int(last_guess[0])
-            last_guess_value = int(last_guess[1])
-            last_rule = int(last_guess[2])
+        if self.last_num != -1:  # 先前猜测不为空列表（本回合不是第一回合）
+            last_guess_quantity = self.last_num
+            last_guess_value = self.last_face
+            last_rule = self.last_zhai
             # 检查猜的值是否符合基本规则
             # 如果为飞猜测
             if guess_rule == 0:
@@ -223,21 +237,27 @@ class Dialog(QDialog):
                     if guess_quantity <= last_guess_quantity and guess_value <= last_guess_value or guess_value == 1:
                         QMessageBox.warning(self, '错误', '输入不符合斋飞规则，请重新输入', QMessageBox.Ok)
                         self.text_input.clear() # 清空文本框
+                        ok_flag = False
                          
                 if last_rule == 1:  # 上局为斋猜测，本局为飞猜测
                     if guess_quantity < last_guess_quantity * 2 and guess_value <= last_guess_value or guess_value == 1:
                         QMessageBox.warning(self, '错误', '输入不符合斋飞规则，请重新输入', QMessageBox.Ok)
                         self.text_input.clear() # 清空文本框
+                        ok_flag = False
             else:
                 if last_rule == 0:  # 上局为飞猜测，本局为斋猜测
                     if guess_quantity < int((last_guess_quantity + 1) / 2) and guess_value <= last_guess_value:
                         QMessageBox.warning(self, '错误', '输入不符合斋飞规则，请重新输入', QMessageBox.Ok)
                         self.text_input.clear() # 清空文本框
+                        ok_flag = False
                 if last_rule == 1:  # 上局为斋猜测，本局为斋猜测
                     if guess_quantity <= last_guess_quantity and guess_value <= last_guess_value:
                         QMessageBox.warning(self, '错误', '输入不符合斋飞规则，请重新输入', QMessageBox.Ok)
-                        self.text_input.clear() # 清空文本框 
-        self.ok_button.setEnabled(True)
+                        self.text_input.clear() # 清空文本框
+                        ok_flag = False
+
+        if ok_flag is True: 
+            self.ok_button.setEnabled(True)
 
     #返回用户勾选
     def verify_use_one(self):
@@ -282,39 +302,44 @@ class Name_dialog(QDialog):
 def main_client():
 
 
-    # # test code
-    # read_server_fn =  {
-    #     'type': 'end',
-    #     'dice': [[1,1,1,1,2],[1,1,1,1,1]],  # n*5的二维列表
-    #     'name': ['xia','zhi'],  # 1*n的一维列表
-    #     'info': 'yes'  # 判决的打印信息
-    # }
+    # test code
+    read_server_fn =   {
+        'type': 'Ask',
+        'is_your_round': 1,
+        'last_guess_num': 7,
+        'last_guess_face':4,
+        'last_guess_zhai':1
+
+    }
     
     while True:
-        # connect server
-        read_server_str,write_server_str = libclient.get_remote_fn(server_ip='127.0.0.1', server_port=12347)
-        # convert json's type to dict
-        read_server_fn,write_server_fn = json.loads(read_server_str),json.loads(write_server_str)
+
         app = QApplication(sys.argv)
+        # create name to client
+        # connect server
+        # read_server_str,write_server_str = libclient.get_remote_fn(server_ip='127.0.0.1', server_port=12347)
+        # # convert json's type to dict
+        # read_server_fn,write_server_fn = json.loads(read_server_str),json.loads(write_server_str)
+        
         client=GUI(read_server_fn=read_server_fn)
         
-        # 玩家继续猜测的输入，用于返回到服务器端
-        if read_server_fn['type'] == 'decide':
-            decide = {
-                'type': 'decide',
-                'num': client.num,  # 若为0则代表玩家选择开
-                'face': client.face,
-                'zhai': client.zhai
-            }
-            decide_mesg_json = json.dumps(decide)
-            write_server_str(decide_mesg_json)
-        elif read_server_fn['type'] == 'start_mesg':
-            start_mesg = {
-                'type': 'start_mesg',
-                'player_name': client.player_name
-            }
-            start_mesg_json = json.dumps(start_mesg)
-            write_server_str(start_mesg_json)
+        # # 玩家继续猜测的输入，用于返回到服务器端
+        # if read_server_fn['type'] == 'Ask':
+        #     decide = {
+        #         'type': 'decide',
+        #         'num': client.num,  # 若为0则代表玩家选择开
+        #         'face': client.face,
+        #         'zhai': client.zhai
+        #     }
+        #     decide_mesg_json = json.dumps(decide)
+        #     write_server_str(decide_mesg_json)
+        # elif read_server_fn['type'] == 'start_mesg':
+        #     start_mesg = {
+        #         'type': 'start_mesg',
+        #         'player_name': client.player_name
+        #     }
+        #     start_mesg_json = json.dumps(start_mesg)
+        #     write_server_str(start_mesg_json)
 
         sys.exit(app.exec_())
 
