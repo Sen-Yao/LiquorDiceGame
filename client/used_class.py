@@ -82,7 +82,7 @@ class Dialog(QDialog):
         user_input = self.text_input.text()
 
         # 使用正则表达式验证输入
-        input_pattern = r'^[0-9] [1-6] [0-1]$'  # 匹配输入要求
+        input_pattern = r'^[0-9]{1,2} [1-6] [0-1]$'  # 匹配输入要求
         if not re.match(input_pattern, user_input) :
             QMessageBox.warning(self, '错误', '输入不符合规范，请重新输入（例如：7 4 1）', QMessageBox.Ok)
             self.text_input.clear() # 清空文本框
