@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-import time
+import json
 from PyQt5.QtCore import QThread, pyqtSignal
 
 #定义一个线程类
 class New_Thread(QThread):
     #自定义信号声明
     # 使用自定义信号和UI主线程通讯，参数是发送信号时附带参数的数据类型，可以是str、int、list等
-    finishSignal = pyqtSignal(str)
+    finishSignal = pyqtSignal(str,object)
 
     # 带一个参数t
     def __init__(self, read_server,write_server):
@@ -20,4 +20,5 @@ class New_Thread(QThread):
             read_server_str = self.read_server()
             #发射自定义信号
             #通过emit函数将参数i传递给主线程，触发自定义信号
-            self.finishSignal.emit(read_server_str)  # 注意这里与_signal = pyqtSignal(str)中的类型相同
+            self.finishSignal.emit(read_server_str,self.write_server)  # 注意这里与_signal = pyqtSignal(str)中的类型相同
+            

@@ -85,7 +85,7 @@ class GUI(QWidget):
             self.num,self.face,self.zhai = dialog.get_user_input()
             self.is_use_one=dialog.verify_use_one()
 
-    def update_gui(self,read_server_str):
+    def update_gui(self,read_server_str,write_server):
         # # convert json's type to dict
         read_server_fn = json.loads(read_server_str)
         if read_server_fn['type'] == 'start_mesg':
@@ -105,13 +105,10 @@ class GUI(QWidget):
             self.openButton.setEnabled(True)
             self.continueButton.setEnabled(True)
             self.welcome_label.setText("\n当前轮到您的轮次，请从下面两个按钮中选择您要进行的操作")
-            # set others widget false
-            # self.welcome_label.setVisible(False)
             # 储存上一个用户的猜测
             self.last_num = read_server_fn['last_guess_num']
             self.last_face = read_server_fn['last_guess_face']
             self.last_zhai = read_server_fn['last_guess_zhai']
-            # 玩家继续猜测的输入，用于返回到服务器端
             decide = {
                 'type': 'decide',
                 'num': self.num,  # 若为0则代表玩家选择开
@@ -119,7 +116,9 @@ class GUI(QWidget):
                 'zhai': self.zhai
             }
             decide_mesg_json = json.dumps(decide)
-            # write_server(decide_mesg_json)
+            print(decide_mesg_json)
+            write_server(decide_mesg_json)
+            
         elif read_server_fn['type'] == 's2c_decide':
             self.type = 's2c_decide'
             self.player_id = read_server_fn['player_id'] # 广播用户id
@@ -137,9 +136,7 @@ class GUI(QWidget):
             self.welcome_label.setText("游戏结束，各玩家的结果为"+str(self.dices)+"\n参与本轮游戏的玩家为"+str(self.names)) 
             self.name_welcome_label.setText(self.info)
 
-                
-            
-            
+                            
 
     # 该函数用于处理开
     def open_action(self):
@@ -160,8 +157,6 @@ def create_name():
         # print(f'用户输入的文本是: {self.player_name}')
         return player_name
     
-
-        
 
 
 def main_client():
