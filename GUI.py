@@ -93,22 +93,28 @@ class GUI(QWidget):
             self.dice = read_server_fn['dice']
             self.player_id = read_server_fn['player_id']
             self.player_name = read_server_fn['player_name']
+            self.total_num = read_server_fn['total_num']
 
             self.name_welcome_label.setText(str(self.player_name)+'您好!\n')
             self.welcome_label.setText(
-            "欢迎使用LiquorDiceGame！\n,当前游戏轮次为第"+str(self.current_round)+",您是" + str(self.player_id) + "号玩家" "\n您的骰子结果为" + ','.join(
-                map(str, self.dice))+"\n当前未到您的轮次，请您耐心等待!" )
+            "欢迎使用LiquorDiceGame！\n,当前游戏轮次为第"+str(self.current_round)+"轮,您是" + str(self.player_id) + "号玩家" "\n您的骰子结果为" + ','.join(
+                map(str, self.dice))+"游戏总人数为:"+str(self.total_num)+"\n当前未到您的轮次，请您耐心等待!" )
             
         elif read_server_fn['type'] == 'Ask':
             if self.finish_decide is not True:
                 self.type = 'Ask'
                 self.openButton.setEnabled(True)
                 self.continueButton.setEnabled(True)
-                self.welcome_label.setText("\n当前轮到您的轮次，请从下面两个按钮中选择您要进行的操作")
                 # 储存上一个用户的猜测
                 self.last_num = read_server_fn['last_guess_num']
                 self.last_face = read_server_fn['last_guess_face']
                 self.last_zhai = read_server_fn['last_guess_zhai']
+                if self.last_face == -1:
+                    self.welcome_label.setText("您是本轮第一个玩家"+" 您的骰子结果为"+str(self.dice)+"游戏总人数为:"+str(self.total_num)+"\n当前轮到您的轮次，请从下面两个按钮中选择您要进行的操作")
+                    self.openButton.setEnabled(False)
+                else:
+                    self.welcome_label.setText("上一个玩家的猜测为："+str(self.last_num)+' '+str(self.last_face)+' '+str(self.zhai)+"  您的骰子结果为"+str(self.dice)+"\n当前轮到您的轮次，请从下面两个按钮中选择您要进行的操作")
+                
             if self.finish_decide is True:
                 decide = {
                     'type': 'decide',
@@ -130,7 +136,7 @@ class GUI(QWidget):
             self.num = read_server_fn['num'] # 广播用户猜测
             self.face = read_server_fn['face']
             self.zhai = read_server_fn['zhai']
-            self.welcome_label.setText("现在"+str(self.player_id)+"号玩家"+str(self.player_name)+"的猜测结果是"+str(self.num)+str(self.face)+str(self.zhai)+"请您参考并等待进行下一步操作")
+            self.welcome_label.setText("现在"+str(self.player_id)+"号玩家"+str(self.player_name)+"的猜测结果是"+str(self.num)+' '+str(self.face)+' '+str(self.zhai)+",游戏总人数为:"+str(self.total_num)+"  您的骰子结果为"+str(self.dice)+"\n请您参考并等待进行下一步操作")
             
         elif read_server_fn['type'] == 'end':
             self.openButton.setEnabled(False)

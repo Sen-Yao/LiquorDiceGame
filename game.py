@@ -137,13 +137,15 @@ def main_game(
     # 游戏主循环
     for k in range(1, max_round+1):  # 10轮游戏
         # 广播初始消息
-        time.sleep(2)
+        end['dice'] = []
+        time.sleep(5)
         for j in range(0, player_num):
             # 初始通信start的消息
             start_mesg['current_round'] = k  # 当前第几轮游戏
             start_mesg['dice'] = lq_game.roll_dice()  # 玩家骰子结果
             start_mesg['player_id'] = j  # 玩家序号
             start_mesg['player_name'] = player_name[j]  # 玩家名字
+            start_mesg['total_num'] = max_player_num # 玩家数量
 
             # 服务器记录的骰子信息
             end['dice'].append(start_mesg['dice'])  # 把真人玩家骰子结果存储
@@ -161,7 +163,7 @@ def main_game(
         previous_guess = []
 
         while True:
-            time.sleep(2)
+            time.sleep(5)
             # 选择玩家
             current_player_id = lq_game.choose_player(previous_guess, players=player_name)
             current_player_name = player_name[current_player_id]
