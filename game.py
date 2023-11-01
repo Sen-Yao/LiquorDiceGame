@@ -137,6 +137,7 @@ def main_game(
     # 游戏主循环
     for k in range(1, max_round+1):  # 10轮游戏
         # 广播初始消息
+        time.sleep(2)
         for j in range(0, player_num):
             # 初始通信start的消息
             start_mesg['current_round'] = k  # 当前第几轮游戏
