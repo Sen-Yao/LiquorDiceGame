@@ -81,7 +81,7 @@ class GUI(QWidget):
 
     def update_gui(self,read_server_str,write_server):
         # # convert json's type to dict
-        time.sleep(1)  # 延时2秒
+        
         self.read_server_str=read_server_str
         self.write_server=write_server
         read_server_fn = json.loads(read_server_str)
@@ -158,7 +158,8 @@ class GUI(QWidget):
     # 该函数用于处理开
     def open_action(self):
         self.finish_decide = True
-        self.num = 0    
+        self.num = 0
+        self.update_gui(self.read_server_str,self.write_server) 
 
 
 

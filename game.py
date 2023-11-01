@@ -154,7 +154,7 @@ def main_game(
         # 服务器记录的骰子信息
         for j in range(0, ai_num):
             ai_name = 'test_AI_' + str(j)
-            end['dice'].append(ai_dict[ai_name].dice)  # 把ai玩家骰子结果存储
+            end['dice'].append(ai_dict[ai_name].dice.tolist())  # 把ai玩家骰子结果存储
 
         # 记录玩家的猜测
         previous_guess = []
