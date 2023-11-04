@@ -24,29 +24,19 @@ class DQN_agent(AI):
         super().__init__(num_player, need_output)
         self.trainer = None
         self.length_of_guess_vector = 61
-        self.net = nn.Sequential(nn.Linear(10, 64),
-                                 nn.ReLU(),
-                                 nn.Linear(64, 256),
-                                 nn.ReLU(),
-                                 nn.Linear(256, 1024),
-                                 nn.ReLU(),
-                                 nn.Linear(1024, 4096),
-                                 nn.ReLU(),
-                                 nn.Linear(4096, 16384),
-                                 nn.ReLU(),
-                                 nn.Linear(16384, 16384),
-                                 nn.ReLU(),
-                                 nn.Linear(16384, 16384),
-                                 nn.ReLU(),
-                                 nn.Linear(16384, 16384),
-                                 nn.ReLU(),
-                                 nn.Linear(16384, 4096),
-                                 nn.ReLU(),
-                                 nn.Linear(4096, 1024),
-                                 nn.ReLU(),
-                                 nn.Linear(1024, 256),
-                                 nn.ReLU(),
-                                 nn.Linear(256, 61))
+        self.net = nn.Sequential(
+            nn.Linear(10, 256), nn.ReLU(),
+            nn.Linear(256, 1024), nn.ReLU(),
+            nn.Linear(1024, 8192), nn.ReLU(),
+            nn.Linear(8192, 16384), nn.ReLU(),
+            nn.Linear(16384, 16384), nn.ReLU(),
+            nn.Linear(16384, 16384), nn.ReLU(),
+            nn.Linear(16384, 16384), nn.ReLU(),
+            nn.Linear(16384, 8192), nn.ReLU(),
+            nn.Linear(8192, 1024), nn.ReLU(),
+            nn.Linear(1024, 256), nn.ReLU(),
+            nn.Linear(256, 61),
+        )
         self.net.to(try_gpu())
         self.InitNet()
         self.loss_function = nn.MSELoss()
@@ -82,7 +72,7 @@ class DQN_agent(AI):
         if self.need_output:
             print('reward_vector = \n', self.reward_vector.int().tolist(),
                   '\nexpect_vector = \n', expect_vector.int().tolist(),
-                  '\nloss = ', int(loss) / 61)
+                  '\nloss = ', loss / 61)
         self.avg_loss += loss
         self.trainer.zero_grad()
         loss.backward()

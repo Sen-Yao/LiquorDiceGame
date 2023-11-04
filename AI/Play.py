@@ -42,7 +42,7 @@ def play(targetAI, num_player, learning, save_learning_result, need_debug_info):
         if isinstance(player_list[1], QlearningAIOneLevel):
             try:
                 player_list[1].Q_table = torch.load('model/QlearningOneLevel/num' + str(num_player) + '.pt')
-                print('已读取model/QlearningOneLevel/num' + str(num_player) + '.pth')
+                print('已读取 model/QlearningOneLevel/num' + str(num_player) + '.pth')
             except FileNotFoundError:
                 torch.save(player_list[1].Q_table, 'model/QlearningOneLevel/num' + str(num_player) + '.pt')
         if isinstance(player_list[1], DQN_agent):

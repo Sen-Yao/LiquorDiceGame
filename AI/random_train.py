@@ -8,14 +8,14 @@ from utils import judge_legal_guess, judge_open
 
 START_FACTOR = 0
 ZHAI_FACTOR = 0.5
-RANDOM_OPEN_FACTOR = 0.5
+RANDOM_OPEN_FACTOR = 0.01
 
-CONTINUE_REWARD = 35
+CONTINUE_REWARD = 20
 
-BE_OPEN_REWARD = 40
+BE_OPEN_REWARD = 10
 BE_OPEN_PUNISH = -40
 
-SUCCESSFUL_OPEN_REWARD = 50
+SUCCESSFUL_OPEN_REWARD = 70
 UNSUCCESSFUL_OPEN_PUNISH = -50
 
 ILLEGAL_PUNISH = -100
@@ -44,7 +44,7 @@ def output_train_info(target, epoch, last_output_time, last_output_epoch):
 
 
 def save_and_update_target(target, coach, num_player, last_save_time):
-    if time.time() - last_save_time > 60:
+    if time.time() - last_save_time > 300:
         if isinstance(target, QlearningAIOneLevel):
             torch.save(target.Q_table, 'model/QlearningOneLevel/num' + str(num_player) + '.pt')
             print('已保存')
