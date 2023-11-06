@@ -85,7 +85,7 @@ class ClassicAI(AI):
                         print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1], '斋')
                     return self.guess
                 else:
-                    self.guess = [most_frequent_value_num + 5 * self.num_player // 3, most_frequent_value_face,
+                    self.guess = [most_frequent_value_num + 5 * self.num_player // 3 + 1, most_frequent_value_face,
                                   False, self.name]
                     if self.need_output:
                         print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1])
@@ -146,6 +146,8 @@ class ClassicAI(AI):
                     # This AI think he has enough same dice and won't be too dangerous to be opened
                     if last_player_num - respond_num < (5 * (self.num_player - 1) / 3):
                         self.guess = [int(input_list[0] + 1), int(input_list[1]), False, self.name]
+                        if int(input_list[0] + 1) <= self.num_player:
+                            self.guess[0] = int(input_list[0] + 2)
                         if self.need_output:
                             print(self.name, '玩家喊出', self.guess[0], '个', self.guess[1])
                         return self.guess

@@ -23,19 +23,22 @@ class DQN_agent(AI):
     def __init__(self, num_player, need_output=False):
         super().__init__(num_player, need_output)
         self.trainer = None
-        self.length_of_guess_vector = 61
-        self.net = nn.Sequential(nn.Linear(10, 64),
-                                 nn.ReLU(),
-                                 nn.Linear(64, 256),
-                                 nn.ReLU(),
-                                 nn.Linear(256, 61))
+        self.length_of_guess_vector = 37
+        self.net = nn.Sequential(
+            nn.Linear(10, 256), nn.ReLU(),
+            nn.Linear(256, 1024), nn.ReLU(),
+            nn.Linear(1024, 8192), nn.ReLU(),
+            nn.Linear(8192, 1024), nn.ReLU(),
+            nn.Linear(1024, 256), nn.ReLU(),
+            nn.Linear(256, self.length_of_guess_vector),
+        )
         self.net.to(try_gpu())
         self.InitNet()
         self.loss_function = nn.MSELoss()
         self.epoch = 0
         self.last_epoch = self.epoch
-        self.reward_vector = torch.zeros((61,), device=try_gpu())
-        self.guess_vector = torch.zeros((61,), device=try_gpu())
+        self.reward_vector = torch.zeros((self.length_of_guess_vector,), device=try_gpu())
+        self.guess_vector = torch.zeros((self.length_of_guess_vector,), device=try_gpu())
         self.name = 'DQN'
         self.guess = [-1, -1, False, self.name]
         self.need_stuck = False
@@ -64,7 +67,7 @@ class DQN_agent(AI):
         if self.need_output:
             print('reward_vector = \n', self.reward_vector.int().tolist(),
                   '\nexpect_vector = \n', expect_vector.int().tolist(),
-                  '\nloss = ', int(loss) / 61)
+                  '\nloss = ', loss / self.length_of_guess_vector)
         self.avg_loss += loss
         self.trainer.zero_grad()
         loss.backward()
@@ -82,13 +85,13 @@ class DQN_agent(AI):
         expect_vector = self.net(input_last_guess)
         if last_guess[0] == -1:
             if this_guess[0] == 0:
-                action_index = 60
+                action_index = self.length_of_guess_vector - 1
             else:
                 action_index = 12 * (this_guess[0] - self.num_player)
                 action_index = 2 * (this_guess[1] - 1) + action_index
                 action_index = int(this_guess[2]) + action_index
         elif this_guess[0] == 0:
-            action_index = 60
+            action_index = self.length_of_guess_vector - 1
             # last is fei, and now self decide to zhai or 1
         elif (not last_guess[2] and last_guess[1] != 1) and (this_guess[1] == 1 or this_guess[2]):
             action_index = 12 * (this_guess[0] - last_guess[0] // 2)
@@ -128,7 +131,7 @@ class DQN_agent(AI):
             state_vector = torch.tensor(state_vector, dtype=torch.float, device=try_gpu())
             self.guess_vector = self.net(state_vector)
             max_index = int(torch.argmax(self.guess_vector))
-            if max_index == 60:
+            if max_index == self.length_of_guess_vector - 1:
                 self.guess = [0, 0, False]
             elif last_guess[0] == -1:
                 self.guess[0] = int(max_index // 12) + self.num_player
@@ -166,13 +169,13 @@ class DQN_agent(AI):
         self.learning_rate = lr
         if last_guess[0] == -1:
             if this_guess[0] == 0:
-                max_index = 60
+                max_index = self.length_of_guess_vector - 1
             else:
                 max_index = 12 * (this_guess[0] - self.num_player)
                 max_index = 2 * (this_guess[1] - 1) + max_index
                 max_index = int(this_guess[2]) + max_index
         elif this_guess[0] == 0:
-            max_index = 60
+            max_index = self.length_of_guess_vector - 1
         # last is fei, and now self decide to zhai or 1
         elif (not last_guess[2] and last_guess[1] != 1) and (this_guess[1] == 1 or this_guess[2]):
             max_index = 12 * (this_guess[0] - last_guess[0] // 2)

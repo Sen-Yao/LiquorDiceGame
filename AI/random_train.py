@@ -8,14 +8,14 @@ from utils import judge_legal_guess, judge_open
 
 START_FACTOR = 0
 ZHAI_FACTOR = 0.5
-RANDOM_OPEN_FACTOR = 0.5
+RANDOM_OPEN_FACTOR = 0.01
 
-CONTINUE_REWARD = 35
+CONTINUE_REWARD = 20
 
-BE_OPEN_REWARD = 40
+BE_OPEN_REWARD = 10
 BE_OPEN_PUNISH = -40
 
-SUCCESSFUL_OPEN_REWARD = 50
+SUCCESSFUL_OPEN_REWARD = 70
 UNSUCCESSFUL_OPEN_PUNISH = -50
 
 ILLEGAL_PUNISH = -100
@@ -28,7 +28,7 @@ def output_train_info(target, epoch, last_output_time, last_output_epoch):
                   '训练速度为', (epoch - last_output_epoch) / 5, 'epoch / s')
             target.zero_detect = 0
         if isinstance(target, DQN_agent):
-            target.avg_loss = target.avg_loss / (target.update_time * 61)
+            target.avg_loss = target.avg_loss / (target.update_time * target.length_of_guess_vector)
             target.decide_loss = target.decide_loss / target.decide_try
             print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), 'epoch=', epoch,
                   '训练速度为', (epoch - last_output_epoch) / 5, 'epoch / s',
@@ -44,7 +44,7 @@ def output_train_info(target, epoch, last_output_time, last_output_epoch):
 
 
 def save_and_update_target(target, coach, num_player, last_save_time):
-    if time.time() - last_save_time > 60:
+    if time.time() - last_save_time > 300:
         if isinstance(target, QlearningAIOneLevel):
             torch.save(target.Q_table, 'model/QlearningOneLevel/num' + str(num_player) + '.pt')
             print('已保存')
@@ -152,13 +152,13 @@ def Traverse_target_decide(target, coach, player_list, last_guess, learning_rate
     target_decide = [0, 0, False]
     # Just for Decide to generate the loss value
     target.Decide(last_guess, 0)
-    for target_guess_num in range(6):
+    for target_guess_num in range(4):
         # target decide to open
-        if target_guess_num == 5:
+        if target_guess_num == 3:
             if last_guess[0] == -1:
                 if need_debug_info:
                     print('Target 开了初始值!')
-                    target_decide[0] = 0
+                    target_decide = [0, 0, False]
                     target.GetReward(last_guess, target_decide, ILLEGAL_PUNISH, learning_rate)
             else:
                 if need_debug_info:
