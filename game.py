@@ -1,4 +1,5 @@
 import random
+import time
 import numpy as np
 import sys
 sys.path.append('web')
@@ -136,28 +137,33 @@ def main_game(
     # 游戏主循环
     for k in range(1, max_round+1):  # 10轮游戏
         # 广播初始消息
+        end['dice'] = []
+        time.sleep(5)
         for j in range(0, player_num):
             # 初始通信start的消息
             start_mesg['current_round'] = k  # 当前第几轮游戏
             start_mesg['dice'] = lq_game.roll_dice()  # 玩家骰子结果
             start_mesg['player_id'] = j  # 玩家序号
             start_mesg['player_name'] = player_name[j]  # 玩家名字
+            start_mesg['total_num'] = max_player_num # 玩家数量
 
             # 服务器记录的骰子信息
             end['dice'].append(start_mesg['dice'])  # 把真人玩家骰子结果存储
 
             # 把初始消息发给真人玩家
+            
             start_mesg_json = json.dumps(start_mesg)  # 将字典消息变为json字符串
             player_write_fn[j](start_mesg_json)
         # 服务器记录的骰子信息
         for j in range(0, ai_num):
             ai_name = 'test_AI_' + str(j)
-            end['dice'].append(ai_dict[ai_name].dice)  # 把ai玩家骰子结果存储
+            end['dice'].append(ai_dict[ai_name].dice.tolist())  # 把ai玩家骰子结果存储
 
         # 记录玩家的猜测
         previous_guess = []
 
         while True:
+            time.sleep(5)
             # 选择玩家
             current_player_id = lq_game.choose_player(previous_guess, players=player_name)
             current_player_name = player_name[current_player_id]
@@ -198,6 +204,7 @@ def main_game(
                     s2c_decide['zhai'] = AI_guess[2]
 
                     # 广播发送该消息给真人玩家
+                    
                     s2c_decide_json = json.dumps(s2c_decide)  # 将字典消息变为json字符串
                     for j in range(0, player_num):
                         player_write_fn[j](s2c_decide_json)
@@ -218,6 +225,7 @@ def main_game(
                     print(end['info'])
 
                     # 广播消息给真人玩家
+                    
                     end_json = json.dumps(end)  # 将字典消息变为json字符串
                     for j in range(0, player_num):
                         player_write_fn[j](end_json)
@@ -234,13 +242,19 @@ def main_game(
                     Ask['last_guess_num'] = -1
                     Ask['last_guess_face'] = -1
                     Ask['last_guess_zhai'] = -1
+                
+                
+                # 用一个ask-decide建立连接
+                
                 Ask_json = json.dumps(Ask)  # 将字典消息变为json字符串
                 player_write_fn[current_player_id](Ask_json)  # 告诉某玩家到他的回合
-
                 # 等待玩家消息
                 decide_json = player_read_fn[current_player_id]()  # 接收玩家消息
                 decide = json.loads(decide_json)  # 使用json.loads()函数将JSON字符串转为字典
+                print(decide)
 
+
+                
                 # 判断玩家选择继续猜测还是选择开
                 if_continue_guess = decide['num']  # 不为0 代表继续猜测
 
@@ -255,6 +269,7 @@ def main_game(
                     s2c_decide['zhai'] = decide['zhai']
 
                     # 广播发送该消息
+                    
                     s2c_decide_json = json.dumps(s2c_decide)  # 将字典消息变为json字符串
                     for j in range(0, player_num):
                         player_write_fn[j](s2c_decide_json)
@@ -276,6 +291,7 @@ def main_game(
                     print(end['info'])
 
                     # 广播消息
+                    
                     end_json = json.dumps(end)  # 将字典消息变为json字符串
                     for j in range(0, player_num):
                         player_write_fn[j](end_json)

@@ -8,16 +8,6 @@ from PySide6.QtCore import QFile, QTextStream, QDate, Signal, Slot, Property, QT
 from PySide6.QtGui import QIntValidator
 
 
-def read(reader):
-    return reader.readline().decode().strip()
-
-
-def write(writer, message):
-    writer.write(message.encode())
-    writer.flush()
-
-
-
 class ListenerThread(QThread):
     connect_signal = Signal(list)
     
@@ -40,9 +30,25 @@ class ListenerThread(QThread):
                 continue
             name = data.decode('utf-8')
             print('Player', name, 'connected.')
-            reader, writer = client_socket.makefile('rb'), client_socket.makefile('wb')
-            read_fn = functools.partial(read, reader)
-            write_fn = functools.partial(write, writer)
+
+            def write_fn(message):
+                try:
+                    # Send the message to the server
+                    client_socket.sendall(message.encode('utf-8'))
+                except Exception as e:
+                    print(f"Error occurred while sending message: {e}")
+
+            def read_fn():
+                try:
+                    # Receive data from the server
+                    data = client_socket.recv(1024)
+                    # Decode the received data
+                    message = data.decode('utf-8')
+                    return message
+                except Exception as e:
+                    print(f"Error occurred while receiving message: {e}")
+                    return None
+            
             write_fn('Successfully connected to server.\n')
             self.client_socket = client_socket
             self.connect_signal.emit([name, read_fn, write_fn, client_socket])
