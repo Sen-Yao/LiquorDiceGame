@@ -12,7 +12,7 @@ DiscountFactor = 0.5
 Greedy_Epsilon = 0
 Epoch = 1000000000
 
-RandomTrain(DQN_agent, ClassicAI, 0.0001, 0, 2000000, 2, True)
+RandomTrain(DQN_agent, ClassicAI, 0.0001, 0, 200000, 2, False)
 
 
 # train(DQN_agent, DQN_agent, 0.0001, 0.1, 1000000, 2, False)

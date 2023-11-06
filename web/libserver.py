@@ -2,6 +2,7 @@ import sys
 import json
 import socket
 import functools
+import time
 from PySide6.QtWidgets import QApplication, QMainWindow, QCalendarWidget, QVBoxLayout, QWidget
 from ldg_ui import Ui_Form
 from PySide6.QtCore import QFile, QTextStream, QDate, Signal, Slot, Property, QThread
@@ -51,9 +52,12 @@ class ListenerThread(QThread):
             
             write_fn('Successfully connected to server.\n')
             self.client_socket = client_socket
+            self.server_socket.close()
+            time.sleep(3)
+            print('Listener thread finished.')
             self.connect_signal.emit([name, read_fn, write_fn, client_socket])
+            return
             break
-        self.server_socket.close()
         print('Listener thread finished.')
         
 
@@ -64,14 +68,16 @@ class Server(QWidget):
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         
+        self.host = host
+        self.port = port
         self.player_count = 0
         self.player_socket = []
         self.player_name = []
         self.player_read_fn = []
         self.player_write_fn = []
         self.setWindowTitle('服务器 ' + host + ':' + str(port))
-        self.listener_thread = ListenerThread(host, port)
-        self.listener_thread.connect_signal.connect(self.handle_client)
+        self.listener_thread = None
+        self.refresh_listener_thread()
         
         player_num_validator = QIntValidator(1, 100)
         play_round_validator = QIntValidator(1, 100)
@@ -87,6 +93,10 @@ class Server(QWidget):
         self.ui.MaxPlayRoundEdit.setText('4')
         self.start_fn = start_fn
         self.listen_to_new_player()
+
+    def refresh_listener_thread(self):
+        self.listener_thread = ListenerThread(self.host, self.port)
+        self.listener_thread.connect_signal.connect(self.handle_client)
         
         
     def listen_to_new_player(self):
@@ -115,8 +125,9 @@ class Server(QWidget):
         self.ui.PlayerList.setCurrentRow(self.player_count - 1)
         
         max_num = self.get_max_player()
-        if self.player_count < max_num:
-            self.listen_to_new_player()
+        # if self.player_count < max_num:
+        time.sleep(2)
+        self.listen_to_new_player()
         self.player_and_max_num_change_control()
 
         
@@ -208,4 +219,4 @@ def start_server(start_fn, host, port):
     
         
 if __name__ == "__main__":
-    start_server(game_logic_example, '127.0.0.1', 12347)
+    start_server(game_logic_example, '10.19.188.180', 12347)

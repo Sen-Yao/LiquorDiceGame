@@ -76,7 +76,7 @@ def RandomTrain(targetAI, coachAI, learning_rate, greedy_epsilon, max_epoch, max
                 player_list[1].net = player_list[0].net
             print('成功读取 model/DQN/DQN.pkl')
         except FileNotFoundError:
-            torch.save(player_list[0].net, 'model/DQN/DQN.pkl')
+            torch.save(player_list[0].net, 'model\\DQN\\DQN.pkl')
     print('正在开始训练，请稍后...')
     for epoch in range(max_epoch + 1):
         # Generate player's number

@@ -298,4 +298,4 @@ def main_game(
                     break
 
 if __name__ == '__main__':
-    libserver.start_server(main_game, '127.0.0.1', 12347)
+    libserver.start_server(main_game, '10.19.188.180', 12347)
